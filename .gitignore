@@ -1,0 +1,4 @@
+node_modules/
+# Régénéré à chaque passage du script (seul history.json est versionné)
+docs/data.json
+.env

@@ -1,0 +1,60 @@
+name: Mise à jour du classement
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # toutes les 30 minutes (GitHub peut décaler de quelques minutes)
+  workflow_dispatch:          # bouton « Run workflow » dans l'onglet Actions
+  push:
+    branches: [main]          # relance quand tu modifies config.json ou la page
+
+permissions:
+  contents: write   # pour sauvegarder docs/history.json
+  pages: write      # pour publier le site
+  id-token: write
+
+concurrency:
+  group: classement
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installer les dépendances
+        run: npm install --no-audit --no-fund
+
+      - name: Lire les temps de jeu sur le PSN
+        run: node scripts/update.mjs
+        env:
+          PSN_NPSSO: ${{ secrets.PSN_NPSSO }}
+
+      - name: Sauvegarder l'historique
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/history.json
+          if git diff --cached --quiet; then
+            echo "Historique inchangé."
+          else
+            git commit -m "Classement mis à jour"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,15 @@
+{
+  "name": "gta6-classement",
+  "private": true,
+  "type": "module",
+  "description": "Classement du temps de jeu PS5 entre amis (GTA VI et tous les jeux), via le PSN.",
+  "scripts": {
+    "update": "node scripts/update.mjs"
+  },
+  "dependencies": {
+    "psn-api": "^2.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

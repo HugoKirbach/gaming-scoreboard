@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classement</title>
+<meta name="description" content="Qui a le plus joué dans la bande ? Classement du temps de jeu PS5, mis à jour automatiquement depuis le PSN.">
+<meta property="og:title" content="Classement entre potes">
+<meta property="og:description" content="Qui a le plus joué ? Temps de jeu PS5 mis à jour toutes les 30 min.">
+<meta name="theme-color" content="#0f0b1d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffc15e'/%3E%3Cstop offset='1' stop-color='%23ff4fa0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='28' fill='url(%23g)'/%3E%3Crect x='4' y='38' width='56' height='4' fill='%230f0b1d'/%3E%3Crect x='4' y='47' width='56' height='5' fill='%230f0b1d'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f0b1d;
+    --surface: #1c1630;
+    --surface-2: #251e3f;
+    --track: #2c2549;
+    --text: #f4effc;
+    --text-2: #c9c1de;
+    --muted: #958db0;
+    --grid: #2a2344;
+    --axis: #3e3660;
+    --ring: rgba(255, 255, 255, 0.08);
+    --pink: #ff4fa0;
+    --orange: #ff9b45;
+    --teal: #3fd8c8;
+    --up: #34c76f;
+    --radius: 18px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { min-height: 100vh; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+
+  .sky {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    background:
+      radial-gradient(120% 55% at 50% -12%, rgba(255, 79, 160, 0.26), transparent 62%),
+      radial-gradient(70% 40% at 92% 0%, rgba(255, 155, 69, 0.20), transparent 60%),
+      linear-gradient(180deg, #150f2a 0%, var(--bg) 55%);
+  }
+  .sun {
+    position: absolute; right: -70px; top: -60px; width: 320px; height: 320px; border-radius: 50%;
+    background: linear-gradient(180deg, #ffc15e 0%, #ff4fa0 75%); opacity: 0.28;
+  }
+  .sun::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 52%; bottom: 0;
+    background: repeating-linear-gradient(180deg, transparent 0 12px, #150f2a 12px 18px);
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 30px 18px 48px; }
+  .kicker { margin: 0 0 8px; font-size: 0.76rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--teal); font-weight: 700; }
+  h1 {
+    margin: 0; font-size: clamp(2.3rem, 8.5vw, 3.9rem); line-height: 0.92; font-weight: 900; font-style: italic;
+    text-transform: uppercase; letter-spacing: -0.01em; padding-right: 0.1em; text-wrap: balance;
+    background: linear-gradient(95deg, #ff6fb0 0%, #ff9b45 60%, #ffd27a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { margin: 12px 0 0; color: var(--text-2); font-size: 1.02rem; }
+
+  .banner {
+    margin: 18px 0 0; padding: 10px 14px; border-radius: 12px; font-size: 0.88rem;
+    background: rgba(63, 216, 200, 0.09); color: #c4f3ee; box-shadow: inset 0 0 0 1px rgba(63, 216, 200, 0.28);
+  }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 14px; }
+  .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(28, 22, 48, 0.85); box-shadow: inset 0 0 0 1px var(--ring); }
+  .seg button {
+    appearance: none; border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: 0.9rem;
+    font-weight: 650; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .seg button:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+  .seg button[aria-checked="true"] { background: linear-gradient(95deg, var(--pink), var(--orange)); color: #1b0d1c; }
+  .seg button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--ring), 0 24px 50px -32px rgba(0, 0, 0, 0.9); }
+  .stack > * + * { margin-top: 14px; }
+  #main { transition: opacity 0.2s; }
+  #main.loading { opacity: 0.55; }
+
+  /* Leader / sortie */
+  .hero { padding: 22px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: auto -20% -60% 30%; height: 140%;
+    background: radial-gradient(closest-side, rgba(255, 79, 160, 0.16), transparent); pointer-events: none;
+  }
+  .hero > * { position: relative; }
+  .hero .avatar { width: 76px; height: 76px; font-size: 1.7rem; }
+  .hero-kicker { font-size: 0.76rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--orange); font-weight: 800; }
+  .hero-name { font-size: 1.25rem; font-weight: 800; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hero-figure { font-size: clamp(3rem, 12vw, 4.4rem); font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin: 8px 0 6px; }
+  .hero-meta { color: var(--text-2); font-size: 0.95rem; }
+  .hero.solo { grid-template-columns: minmax(0, 1fr); }
+  .countdown { font-size: clamp(3.2rem, 14vw, 5rem); font-weight: 900; font-style: italic; line-height: 1; margin: 8px 0 6px;
+    background: linear-gradient(95deg, #ff6fb0, #ff9b45); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.08em; }
+
+  /* Classement */
+  .board { list-style: none; margin: 0; padding: 6px; }
+  .row {
+    display: grid; grid-template-columns: 2rem 44px minmax(0, 1fr) auto; column-gap: 12px; row-gap: 9px;
+    align-items: center; padding: 12px; border-radius: 12px;
+  }
+  .row + .row { box-shadow: 0 -1px 0 var(--grid); }
+  .rank { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--muted); text-align: center; font-size: 1.05rem; }
+  .row.r1 .rank { color: #ffd27a; }
+  .row.r2 .rank { color: #e4def2; }
+  .row.r3 .rank { color: #e6a57e; }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+    background: var(--surface-2); color: var(--text); font-weight: 800;
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c, var(--axis));
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .who { min-width: 0; }
+  .name { font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta { font-size: 0.82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .val { text-align: right; white-space: nowrap; }
+  .val strong { display: block; font-size: 1.15rem; font-variant-numeric: tabular-nums; font-weight: 800; }
+  .chip { font-size: 0.78rem; color: var(--muted); }
+  .chip.up { color: var(--up); }
+  .chip .short { display: none; }
+  @media (max-width: 520px) { .chip .short { display: inline; } }
+  .bar { grid-column: 3 / 5; height: 8px; border-radius: 999px; background: var(--track); }
+  .bar i { display: block; height: 100%; border-radius: 999px; background: var(--c); transition: width 0.4s ease; }
+  .warn { color: var(--orange); }
+
+  /* Graphique */
+  .chart-card { padding: 18px 18px 10px; position: relative; }
+  .chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: baseline; margin-bottom: 10px; }
+  h2 { margin: 0; font-size: 1.05rem; font-weight: 800; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.82rem; color: var(--text-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 2px; border-radius: 2px; background: var(--c); }
+  .legend em { font-style: normal; color: var(--muted); }
+  .chart { position: relative; outline: none; border-radius: 8px; }
+  .chart:focus-visible { box-shadow: 0 0 0 2px var(--teal); }
+  .chart svg { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
+  .chart text { font-family: inherit; }
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); text-align: center; padding: 0 24px; font-size: 0.95rem; }
+  .tip {
+    position: absolute; pointer-events: none; background: #110c22; border-radius: 10px; padding: 8px 10px; z-index: 2;
+    box-shadow: 0 0 0 1px var(--ring), 0 12px 30px -10px #000; font-size: 0.82rem; min-width: 150px;
+  }
+  .tip .t { color: var(--muted); margin-bottom: 4px; }
+  .tip .r { display: grid; grid-template-columns: 14px auto minmax(0, 1fr); gap: 8px; align-items: center; white-space: nowrap; }
+  .tip .r i { height: 2px; background: var(--c); border-radius: 2px; }
+  .tip .r b { font-variant-numeric: tabular-nums; }
+  .tip .r span { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; }
+
+  /* Profils bloqués */
+  .locked { padding: 18px; }
+  .locked p { margin: 6px 0 12px; color: var(--text-2); font-size: 0.92rem; }
+  .locked ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .locked li { display: flex; gap: 10px; align-items: center; font-size: 0.92rem; }
+  .locked .avatar { width: 32px; height: 32px; font-size: 0.85rem; }
+  .locked small { color: var(--muted); display: block; }
+
+  footer { margin-top: 24px; color: var(--muted); font-size: 0.8rem; text-align: center; }
+  footer p { margin: 4px 0; }
+
+  @media (max-width: 520px) {
+    .wrap { padding: 22px 12px 40px; }
+    .row { grid-template-columns: 1.5rem 38px minmax(0, 1fr) auto; column-gap: 10px; padding: 11px 8px; }
+    .avatar { width: 38px; height: 38px; }
+    .meta { white-space: normal; }
+    .chip .long { display: none; }
+    .hero { padding: 18px; gap: 14px; }
+    .hero .avatar { width: 58px; height: 58px; font-size: 1.3rem; }
+    .sun { width: 220px; height: 220px; right: -60px; top: -50px; }
+    .chart-card { padding: 14px 12px 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .bar i, #main { transition: none; } }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"><div class="sun"></div></div>
+
+<div class="wrap">
+  <header>
+    <p class="kicker" id="kicker">PS5 · entre potes</p>
+    <h1 id="title">Classement</h1>
+    <p class="sub" id="subtitle"></p>
+    <p class="banner" id="demoBanner" hidden></p>
+  </header>
+
+  <nav class="filters" aria-label="Filtres">
+    <div class="seg" role="radiogroup" aria-label="Jeu" id="scopeSeg">
+      <button type="button" role="radio" data-value="game" aria-checked="true" id="gameBtn">Le jeu</button>
+      <button type="button" role="radio" data-value="all" aria-checked="false">Tous les jeux</button>
+    </div>
+    <div class="seg" role="radiogroup" aria-label="Période" id="rangeSeg">
+      <button type="button" role="radio" data-value="total" aria-checked="true">Total</button>
+      <button type="button" role="radio" data-value="week" aria-checked="false">7 jours</button>
+      <button type="button" role="radio" data-value="day" aria-checked="false">24 h</button>
+    </div>
+  </nav>
+
+  <main id="main" class="stack loading">
+    <section class="card hero" id="hero" aria-live="polite"></section>
+    <section class="card" aria-labelledby="boardTitle">
+      <h2 id="boardTitle" hidden>Classement</h2>
+      <ol class="board" id="board"></ol>
+    </section>
+    <section class="card chart-card" aria-labelledby="chartTitle">
+      <div class="chart-head">
+        <h2 id="chartTitle">La course</h2>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="chart" id="chart" tabindex="0" role="img">
+        <svg id="svg" aria-hidden="true"></svg>
+        <div class="empty" id="chartEmpty" hidden></div>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+    </section>
+    <section class="card locked" id="locked" hidden>
+      <h2>Profils à débloquer</h2>
+      <p>Pour apparaître, chacun doit rendre son historique de jeu visible&nbsp;: sur PS5, <strong>Paramètres › Utilisateurs et comptes › Confidentialité</strong>, puis dans la rubrique Jeux | Médias, régler qui peut voir l'historique de jeu sur <strong>Tout le monde</strong>.</p>
+      <ul id="lockedList"></ul>
+    </section>
+  </main>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // Palette catégorielle (validée pour fond sombre). La couleur suit le joueur
+  // (ordre de config.json), jamais son rang.
+  const SERIES = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#0ca30c", "#9085e9", "#e66767"];
+  const OVERFLOW = "#6f6890";
+  const H = 36e5, D = 864e5;
+  const RANGES = { total: null, week: 7 * D, day: D };
+  const RANGE_TXT = { total: "au total", week: "sur 7 jours", day: "sur 24 h" };
+  const REFRESH_MS = 5 * 60 * 1000;
+
+  const state = { scope: "game", range: "total", data: null, history: { points: [] }, demo: false };
+  const $ = (id) => document.getElementById(id);
+  const nf = new Intl.NumberFormat("fr-FR");
+  const rtf = new Intl.RelativeTimeFormat("fr", { numeric: "auto" });
+
+  // ---------- utilitaires ----------
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function svg(tag, attrs, parent) {
+    const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function fmtDur(min) {
+    min = Math.max(0, Math.round(min || 0));
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min / 60), m = min % 60;
+    if (h >= 100 || m === 0) return `${nf.format(h)} h`;
+    return `${h} h ${String(m).padStart(2, "0")}`;
+  }
+  function relTime(iso) {
+    if (!iso) return null;
+    const diff = Date.parse(iso) - Date.now();
+    const a = Math.abs(diff);
+    if (a < 60e3) return "à l'instant";
+    if (a < H) return rtf.format(Math.round(diff / 60e3), "minute");
+    if (a < D) return rtf.format(Math.round(diff / H), "hour");
+    return rtf.format(Math.round(diff / D), "day");
+  }
+  const colorOf = (p) => (p.order != null && p.order < SERIES.length ? SERIES[p.order] : OVERFLOW);
+  const initials = (name) => (String(name || "?").trim()[0] || "?").toUpperCase();
+
+  function avatar(p, extraCls) {
+    const a = el("div", "avatar" + (extraCls ? " " + extraCls : ""));
+    a.style.setProperty("--c", colorOf(p));
+    const fallback = () => { a.textContent = initials(p.name); };
+    if (p.avatar && /^https:\/\//.test(p.avatar)) {
+      const img = el("img");
+      img.alt = "";
+      img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      img.onerror = fallback;
+      img.src = p.avatar;
+      a.appendChild(img);
+    } else fallback();
+    return a;
+  }
+
+  // ---------- calculs ----------
+  const scopeKey = () => (state.scope === "game" ? "g" : "a");
+  const current = (p) => (state.scope === "game" ? p.game?.minutes : p.all?.minutes) ?? 0;
+  const lastPlayed = (p) => (state.scope === "game" ? p.game?.lastPlayed : p.all?.lastPlayed) ?? null;
+  const nowOf = () => Date.parse(state.data?.updatedAt) || Date.now();
+
+  function seriesHistory(key) {
+    const k = scopeKey();
+    const out = [];
+    for (const pt of state.history?.points ?? []) {
+      const v = pt?.[k]?.[key];
+      const t = Date.parse(pt?.t);
+      if (v != null && !Number.isNaN(t)) out.push({ t, v });
+    }
+    return out.sort((a, b) => a.t - b.t);
+  }
+  function valueAt(series, time) {
+    let v;
+    for (const pt of series) { if (pt.t <= time) v = pt.v; else break; }
+    return v;
+  }
+  function baseline(p, start) {
+    const s = seriesHistory(p.key);
+    let v = valueAt(s, start);
+    if (v == null) { const first = s.find((pt) => pt.t >= start); v = first ? first.v : current(p); }
+    return v;
+  }
+  const windowStart = (now) => (RANGES[state.range] ? now - RANGES[state.range] : null);
+  function metric(p, now) {
+    if (state.range === "total") return current(p);
+    return Math.max(0, current(p) - baseline(p, windowStart(now)));
+  }
+  const delta24 = (p, now) => Math.max(0, current(p) - baseline(p, now - D));
+
+  function releaseInfo() {
+    const rd = state.data?.game?.releaseDate;
+    if (!rd) return null;
+    const [y, m, d] = rd.split("-").map(Number);
+    const release = new Date(y, m - 1, d);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return { release, daysLeft: Math.round((release - today) / D) };
+  }
+
+  // ---------- rendu ----------
+  function render() {
+    const data = state.data;
+    if (!data) return;
+    const now = nowOf();
+    const label = data.game?.label || "GTA VI";
+    document.title = data.title || `Classement ${label}`;
+    $("title").textContent = data.title || `Classement ${label}`;
+    $("gameBtn").textContent = label;
+    $("kicker").textContent = data.kicker || "PS5 · entre potes";
+    $("subtitle").textContent = data.subtitle || `Qui passe le plus de temps sur ${label} ?`;
+    $("demoBanner").hidden = !state.demo;
+    $("demoBanner").textContent = "Aperçu avec des données fictives : " +
+      (state.setupMessage || "le vrai classement s'affichera dès que la mise à jour automatique aura tourné une première fois.");
+    $("main").classList.remove("loading");
+
+    const players = data.players ?? [];
+    const visible = players.filter((p) => p.status === "ok" || p.status === "stale");
+    const ranked = visible
+      .map((p) => ({ p, value: metric(p, now), d24: delta24(p, now) }))
+      .sort((a, b) => b.value - a.value || String(a.p.name).localeCompare(String(b.p.name), "fr"));
+    let rank = 0, prev = null;
+    ranked.forEach((r, i) => { if (r.value !== prev) rank = i + 1; r.rank = rank; prev = r.value; });
+
+    const rel = releaseInfo();
+    const allZero = ranked.every((r) => current(r.p) === 0);
+    const preRelease = state.scope === "game" && rel && rel.daysLeft > 0 && allZero;
+
+    renderHero(ranked, preRelease, rel, label);
+    renderBoard(ranked);
+    renderChart(ranked, now, preRelease);
+    renderLocked(players.filter((p) => !(p.status === "ok" || p.status === "stale")));
+    renderFooter(data);
+  }
+
+  function renderHero(ranked, preRelease, rel, label) {
+    const hero = $("hero");
+    hero.replaceChildren();
+    hero.className = "card hero";
+
+    if (preRelease) {
+      hero.classList.add("solo");
+      const box = el("div");
+      const date = rel.release.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+      box.append(
+        el("div", "hero-kicker", `Sortie ${date}`),
+        el("div", "countdown", rel.daysLeft === 1 ? "Demain" : `J-${rel.daysLeft}`),
+        el("div", "hero-meta", `Le classement ${label} démarre tout seul à la première session. Préparez les manettes.`)
+      );
+      hero.appendChild(box);
+      return;
+    }
+    if (!ranked.length) {
+      hero.classList.add("solo");
+      hero.appendChild(el("div", "hero-meta", "Aucun profil lisible pour l'instant : vérifie les pseudos PSN et les réglages de confidentialité."));
+      return;
+    }
+    const [first, second] = ranked;
+    if (first.value === 0) {
+      hero.classList.add("solo");
+      const box = el("div");
+      box.append(
+        el("div", "hero-kicker", "Calme plat"),
+        el("div", "hero-name", state.range === "total" ? "Personne n'a encore joué." : `Personne n'a joué ${RANGE_TXT[state.range]}.`)
+      );
+      hero.appendChild(box);
+      return;
+    }
+    const box = el("div");
+    const lead = second ? first.value - second.value : null;
+    let meta = second
+      ? (lead > 0 ? `${fmtDur(lead)} d'avance sur ${second.p.name}` : `À égalité avec ${second.p.name}`)
+      : "Seul en piste";
+    if (state.range === "total" && first.d24 > 0) meta += ` · +${fmtDur(first.d24)} ces dernières 24 h`;
+    box.append(
+      el("div", "hero-kicker", `N°1 ${RANGE_TXT[state.range]}`),
+      el("div", "hero-name", first.p.name),
+      el("div", "hero-figure", fmtDur(first.value)),
+      el("div", "hero-meta", meta)
+    );
+    hero.append(avatar(first.p), box);
+  }
+
+  function renderBoard(ranked) {
+    const board = $("board");
+    board.replaceChildren();
+    const max = Math.max(1, ...ranked.map((r) => r.value));
+    for (const r of ranked) {
+      const p = r.p;
+      const li = el("li", "row" + (r.value > 0 && r.rank <= 3 ? ` r${r.rank}` : ""));
+      li.style.setProperty("--c", colorOf(p));
+
+      const who = el("div", "who");
+      who.appendChild(el("div", "name", p.name));
+      const metaParts = [`@${p.psn}`];
+      const lp = relTime(lastPlayed(p));
+      if (lp && current(p) > 0) metaParts.push(`joué ${lp}`);
+      const meta = el("div", "meta", metaParts.join(" · "));
+      if (p.status === "stale") {
+        const w = el("span", "warn", " · profil momentanément illisible");
+        meta.appendChild(w);
+      }
+      who.appendChild(meta);
+
+      const val = el("div", "val");
+      val.appendChild(el("strong", null, fmtDur(r.value)));
+      if (state.range === "total") {
+        if (r.d24 > 0) {
+          const chip = el("span", "chip up", `▲ ${fmtDur(r.d24)}`);
+          chip.appendChild(el("span", "long", " en 24 h"));
+          chip.appendChild(el("span", "short", " / 24 h"));
+          val.appendChild(chip);
+        }
+      } else {
+        val.appendChild(el("span", "chip", `${fmtDur(current(p))} au total`));
+      }
+
+      const bar = el("div", "bar");
+      const fill = el("i");
+      fill.style.width = `${(r.value / max) * 100}%`;
+      bar.appendChild(fill);
+
+      li.append(el("div", "rank", r.value > 0 ? String(r.rank) : "–"), avatar(p), who, val, bar);
+      li.setAttribute("aria-label", `${r.rank}e : ${p.name}, ${fmtDur(r.value)} ${RANGE_TXT[state.range]}`);
+      board.appendChild(li);
+    }
+  }
+
+  function renderLocked(list) {
+    $("locked").hidden = list.length === 0;
+    const ul = $("lockedList");
+    ul.replaceChildren();
+    for (const p of list) {
+      const li = el("li");
+      const txt = el("div");
+      txt.appendChild(el("div", null, `${p.name} (@${p.psn})`));
+      const why = p.status === "not_found" ? "Pseudo PSN introuvable, vérifie l'orthographe dans config.json."
+        : p.status === "private" ? "Historique de jeu masqué."
+        : "Lecture impossible pour le moment.";
+      txt.appendChild(el("small", null, why));
+      li.append(avatar(p), txt);
+      ul.appendChild(li);
+    }
+  }
+
+  function renderFooter(data) {
+    const foot = $("foot");
+    foot.replaceChildren();
+    const when = state.demo ? "Données de démonstration" : `Mis à jour ${relTime(data.updatedAt) ?? "—"}`;
+    foot.append(
+      el("p", null, `${when} · actualisation toutes les ${data.refreshMinutes ?? 30} min`),
+      el("p", null, "Temps de jeu lu sur le PSN (API non officielle), parfois avec un peu de retard. Site entre amis, sans lien avec Rockstar Games ni Sony.")
+    );
+  }
+
+  // ---------- graphique ----------
+  let chartModel = null;
+
+  function niceStep(maxH) {
+    const raw = maxH / 4;
+    const steps = [0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
+    return steps.find((s) => s >= raw) ?? Math.pow(10, Math.ceil(Math.log10(raw)));
+  }
+  function timeTicks(t0, t1, maxTicks) {
+    const span = t1 - t0;
+    const cands = span <= 2 * D ? [1, 2, 3, 6, 12].map((h) => h * H) : [1, 2, 7, 14, 30, 60].map((d) => d * D);
+    const step = cands.find((s) => span / s <= maxTicks) ?? cands[cands.length - 1];
+    const daily = step >= D;
+    const d = new Date(t0);
+    if (!daily) {
+      const hs = step / H;
+      d.setMinutes(0, 0, 0);
+      d.setHours(Math.ceil(d.getHours() / hs) * hs);
+      while (d.getTime() < t0) d.setTime(d.getTime() + step);
+    } else {
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() < t0) d.setDate(d.getDate() + 1);
+    }
+    const ticks = [];
+    while (d.getTime() <= t1 && ticks.length < 40) {
+      ticks.push(d.getTime());
+      if (daily) d.setDate(d.getDate() + step / D); else d.setTime(d.getTime() + step);
+    }
+    return { ticks, daily };
+  }
+  const fmtTick = (t, daily) => {
+    const d = new Date(t);
+    if (daily || d.getHours() === 0) return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    return `${d.getHours()} h`;
+  };
+  const fmtTipTime = (t) => new Date(t).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const fmtHoursAxis = (h, step) => `${step < 1 ? nf.format(Math.round(h * 100) / 100) : nf.format(Math.round(h))} h`;
+
+  function renderChart(ranked, now, preRelease) {
+    const box = $("chart");
+    const root = $("svg");
+    const empty = $("chartEmpty");
+    const legend = $("legend");
+    root.replaceChildren();
+    legend.replaceChildren();
+    $("tip").hidden = true;
+    chartModel = null;
+
+    const start = windowStart(now);
+    const shown = ranked.filter((r) => r.p.order != null && r.p.order < SERIES.length)
+      .sort((a, b) => a.p.order - b.p.order);
+    const hiddenCount = ranked.length - shown.length;
+
+    const series = shown.map(({ p }) => {
+      const hist = seriesHistory(p.key);
+      const base = start == null ? 0 : baseline(p, start);
+      const pts = [];
+      if (start != null) pts.push({ t: start, v: 0 });
+      for (const h of hist) if ((start == null || h.t > start) && h.t < now) pts.push({ t: h.t, v: Math.max(0, h.v - base) });
+      pts.push({ t: now, v: Math.max(0, current(p) - base) });
+      return { p, color: colorOf(p), pts };
+    });
+
+    // Légende (toujours présente dès 2 séries)
+    if (series.length >= 2) {
+      for (const s of series) {
+        const item = el("span");
+        const key = el("i");
+        key.style.setProperty("--c", s.color);
+        item.append(key, document.createTextNode(s.p.name));
+        legend.appendChild(item);
+      }
+      if (hiddenCount > 0) legend.appendChild(el("em", null, `+${hiddenCount} dans le classement`));
+    }
+
+    const width = Math.max(280, box.clientWidth);
+    const height = width < 480 ? 230 : 270;
+    root.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    root.setAttribute("height", height);
+
+    const allPts = series.flatMap((s) => s.pts);
+    const t0 = start ?? Math.min(...allPts.map((p) => p.t));
+    const maxMin = Math.max(0, ...allPts.map((p) => p.v));
+    const label = state.data?.game?.label || "GTA VI";
+
+    const showEmpty = (msg) => {
+      empty.hidden = false;
+      empty.textContent = msg;
+      box.setAttribute("aria-label", msg);
+    };
+    if (!series.length) return showEmpty("Rien à afficher pour l'instant.");
+    if (preRelease) return showEmpty(`La course démarre à la sortie de ${label}.`);
+    if (maxMin === 0) return showEmpty(state.range === "total" ? "La course démarre dès la première session." : `Personne n'a joué ${RANGE_TXT[state.range]}.`);
+    if (!(now - t0 > 60e3)) return showEmpty("Pas encore assez d'historique : la courbe apparaîtra après quelques mises à jour.");
+    empty.hidden = true;
+
+    // Échelles
+    const maxH = maxMin / 60;
+    const step = niceStep(maxH);
+    const yMaxH = Math.ceil(maxH / step) * step;
+    const m = { top: 12, bottom: 28, left: 46, right: 18 };
+    const innerH = height - m.top - m.bottom;
+    const y = (min) => m.top + innerH - (min / 60 / yMaxH) * innerH;
+
+    // Étiquettes directes en bout de courbe (≤ 4 séries, seulement si elles ne se chevauchent pas)
+    let directLabels = series.length <= 4;
+    if (directLabels) {
+      const ends = series.map((s) => y(s.pts[s.pts.length - 1].v)).sort((a, b) => a - b);
+      for (let i = 1; i < ends.length; i++) if (ends[i] - ends[i - 1] < 16) directLabels = false;
+    }
+    if (directLabels) {
+      const longest = Math.max(...series.map((s) => String(s.p.name).length));
+      m.right = Math.min(130, 18 + longest * 7.2);
+    }
+    const innerW = width - m.left - m.right;
+    const x = (t) => m.left + ((t - t0) / (now - t0)) * innerW;
+
+    // Grille + axe Y
+    const gGrid = svg("g", {}, root);
+    for (let h = 0; h <= yMaxH + 1e-9; h += step) {
+      const yy = Math.round(y(h * 60)) + 0.5;
+      svg("line", { x1: m.left, x2: width - m.right, y1: yy, y2: yy, stroke: h === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1 }, gGrid);
+      const tx = svg("text", { x: m.left - 8, y: yy + 4, "text-anchor": "end", fill: "var(--muted)", "font-size": 11, style: "font-variant-numeric: tabular-nums" }, gGrid);
+      tx.textContent = fmtHoursAxis(h, step);
+    }
+    // Axe X
+    const { ticks, daily } = timeTicks(t0, now, Math.max(2, Math.floor(innerW / 80)));
+    for (const t of ticks) {
+      const tx = svg("text", { x: x(t), y: height - 8, "text-anchor": "middle", fill: "var(--muted)", "font-size": 11 }, gGrid);
+      tx.textContent = fmtTick(t, daily);
+    }
+
+    // Courbes
+    const gLines = svg("g", {}, root);
+    for (const s of series) {
+      const d = s.pts.map((pt, i) => `${i ? "L" : "M"}${x(pt.t).toFixed(1)},${y(pt.v).toFixed(1)}`).join("");
+      svg("path", { d, fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, gLines);
+    }
+    // Points de fin (anneau de 2 px couleur surface)
+    for (const s of series) {
+      const last = s.pts[s.pts.length - 1];
+      svg("circle", { cx: x(last.t), cy: y(last.v), r: 4, fill: s.color, stroke: "var(--surface)", "stroke-width": 2 }, gLines);
+      if (directLabels) {
+        const tx = svg("text", { x: x(last.t) + 9, y: y(last.v) + 4, fill: "var(--text-2)", "font-size": 12 }, gLines);
+        tx.textContent = s.p.name;
+      }
+    }
+
+    // Couche de survol
+    const gHover = svg("g", { visibility: "hidden" }, root);
+    const cross = svg("line", { y1: m.top, y2: m.top + innerH, stroke: "var(--muted)", "stroke-width": 1 }, gHover);
+    const dots = series.map((s) => svg("circle", { r: 4, fill: s.color, stroke: "var(--surface)", "stroke-width": 2 }, gHover));
+
+    const times = [...new Set(allPts.map((p) => p.t))].sort((a, b) => a - b);
+    chartModel = { series, times, x, y, gHover, cross, dots, width, height, m, idx: times.length - 1 };
+
+    const summary = series
+      .map((s) => `${s.p.name} ${fmtDur(s.pts[s.pts.length - 1].v)}`)
+      .join(", ");
+    box.setAttribute("aria-label", `Évolution du temps de jeu ${state.scope === "game" ? label : "tous jeux"} ${RANGE_TXT[state.range]} : ${summary}.`);
+  }
+
+  function showAt(idx) {
+    const cm = chartModel;
+    if (!cm || !cm.times.length) return;
+    idx = Math.max(0, Math.min(cm.times.length - 1, idx));
+    cm.idx = idx;
+    const t = cm.times[idx];
+    const xx = cm.x(t);
+    cm.gHover.setAttribute("visibility", "visible");
+    cm.cross.setAttribute("x1", xx);
+    cm.cross.setAttribute("x2", xx);
+
+    const rows = [];
+    cm.series.forEach((s, i) => {
+      const v = valueAt(s.pts, t);
+      if (v == null) { cm.dots[i].setAttribute("visibility", "hidden"); return; }
+      cm.dots[i].setAttribute("visibility", "visible");
+      cm.dots[i].setAttribute("cx", xx);
+      cm.dots[i].setAttribute("cy", cm.y(v));
+      rows.push({ s, v });
+    });
+    rows.sort((a, b) => b.v - a.v);
+
+    const tip = $("tip");
+    tip.replaceChildren(el("div", "t", fmtTipTime(t)));
+    for (const { s, v } of rows) {
+      const r = el("div", "r");
+      const key = el("i");
+      key.style.setProperty("--c", s.color);
+      r.append(key, el("b", null, fmtDur(v)), el("span", null, s.p.name));
+      tip.appendChild(r);
+    }
+    tip.hidden = false;
+    const box = $("chart");
+    const scale = box.clientWidth / cm.width;
+    const px = xx * scale;
+    const tw = tip.offsetWidth;
+    let left = px + 14;
+    if (left + tw > box.clientWidth) left = px - 14 - tw;
+    tip.style.left = `${Math.max(0, left)}px`;
+    tip.style.top = `${cm.m.top * scale}px`;
+  }
+  function hideTip() {
+    if (chartModel) chartModel.gHover.setAttribute("visibility", "hidden");
+    $("tip").hidden = true;
+  }
+  function nearestIndex(clientX) {
+    const cm = chartModel;
+    const rect = $("svg").getBoundingClientRect();
+    const vx = ((clientX - rect.left) / rect.width) * cm.width;
+    let best = 0, bestD = Infinity;
+    cm.times.forEach((t, i) => { const d = Math.abs(cm.x(t) - vx); if (d < bestD) { bestD = d; best = i; } });
+    return best;
+  }
+
+  const chartBox = $("chart");
+  chartBox.addEventListener("pointermove", (e) => { if (chartModel) showAt(nearestIndex(e.clientX)); });
+  chartBox.addEventListener("pointerleave", hideTip);
+  chartBox.addEventListener("focus", () => { if (chartModel) showAt(chartModel.idx); });
+  chartBox.addEventListener("blur", hideTip);
+  chartBox.addEventListener("keydown", (e) => {
+    if (!chartModel) return;
+    if (e.key === "ArrowLeft") { showAt(chartModel.idx - 1); e.preventDefault(); }
+    else if (e.key === "ArrowRight") { showAt(chartModel.idx + 1); e.preventDefault(); }
+    else if (e.key === "Home") { showAt(0); e.preventDefault(); }
+    else if (e.key === "End") { showAt(chartModel.times.length - 1); e.preventDefault(); }
+    else if (e.key === "Escape") hideTip();
+  });
+
+  // ---------- filtres ----------
+  function wireSeg(id, prop) {
+    const seg = $(id);
+    const buttons = [...seg.querySelectorAll("button")];
+    const select = (btn) => {
+      buttons.forEach((b) => b.setAttribute("aria-checked", String(b === btn)));
+      state[prop] = btn.dataset.value;
+      render();
+    };
+    buttons.forEach((b, i) => {
+      b.addEventListener("click", () => select(b));
+      b.addEventListener("keydown", (e) => {
+        const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!dir) return;
+        const nb = buttons[(i + dir + buttons.length) % buttons.length];
+        nb.focus(); select(nb); e.preventDefault();
+      });
+    });
+  }
+  wireSeg("scopeSeg", "scope");
+  wireSeg("rangeSeg", "range");
+
+  let resizeTimer;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
+
+  // ---------- données ----------
+  function makeDemo(meta = {}) {
+    const now = Date.now();
+    const label = meta.game?.label || "GTA VI";
+    const launch = now - 3 * D - 4 * H;
+    const people = [
+      ["Mehdi", "mehdi_93", 0.62, 21000], ["Lucie", "lulu_flow", 0.48, 9500], ["Tom", "tomtom_95", 0.4, 14200],
+      ["Sarah", "sarah.gg", 0.33, 6400], ["Nico", "nicO_drift", 0.24, 3100], ["Jade", "jade.wav", 0.16, 12000],
+    ];
+    let seed = 11;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const g = people.map(() => 0);
+    const last = people.map(() => null);
+    const points = [];
+    const step = 30 * 60e3;
+    for (let t = launch - 2 * step; t <= now; t += step) {
+      const hr = new Date(t).getHours();
+      const prime = hr >= 18 || hr < 2 ? 1 : hr >= 10 && hr < 18 ? 0.35 : 0.05;
+      people.forEach((pp, i) => {
+        if (t >= launch && rnd() < pp[2] * prime * 1.5) { g[i] += 20 + Math.floor(rnd() * 11); last[i] = t; }
+      });
+      const key = (pp) => pp[1].toLowerCase();
+      points.push({
+        t: new Date(t).toISOString(),
+        g: Object.fromEntries(people.map((pp, i) => [key(pp), g[i]])),
+        a: Object.fromEntries(people.map((pp, i) => [key(pp), pp[3] + g[i]])),
+      });
+    }
+    const ld = new Date(launch);
+    const pad = (n) => String(n).padStart(2, "0");
+    const players = people.map((pp, i) => ({
+      key: pp[1].toLowerCase(), psn: pp[1], name: pp[0], order: i, avatar: null, status: "ok",
+      game: { minutes: g[i], lastPlayed: last[i] ? new Date(last[i]).toISOString() : null, title: label },
+      all: { minutes: pp[3] + g[i], games: 18 + i * 5, top: null, lastPlayed: last[i] ? new Date(last[i]).toISOString() : null },
+    }));
+    players.push({ key: "kev_ps5", psn: "kev_ps5", name: "Kévin", order: 6, avatar: null, status: "private",
+      game: { minutes: 0 }, all: { minutes: 0 } });
+    return {
+      data: {
+        title: meta.title || `Classement ${label}`,
+        kicker: meta.kicker,
+        subtitle: meta.subtitle,
+        game: { label, releaseDate: `${ld.getFullYear()}-${pad(ld.getMonth() + 1)}-${pad(ld.getDate())}` },
+        updatedAt: new Date(now).toISOString(), refreshMinutes: meta.refreshMinutes || 30, players,
+      },
+      history: { points },
+    };
+  }
+
+  async function load() {
+    const params = new URLSearchParams(location.search);
+    if (params.has("demo")) {
+      Object.assign(state, makeDemo(), { demo: true, setupMessage: null });
+      return render();
+    }
+    try {
+      const v = Date.now();
+      const [data, history] = await Promise.all([
+        fetch(`data.json?v=${v}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+        fetch(`history.json?v=${v}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { points: [] })).catch(() => ({ points: [] })),
+      ]);
+      if (data.setup) {
+        // Mise en place pas terminée (pseudos ou jeton manquants) : démo aux couleurs du jeu choisi
+        Object.assign(state, makeDemo(data), { demo: true, setupMessage: data.setupMessage || null });
+      } else {
+        Object.assign(state, { data, history, demo: false, setupMessage: null });
+      }
+    } catch {
+      if (!state.data || state.demo) Object.assign(state, makeDemo(), { demo: true, setupMessage: null });
+    }
+    render();
+  }
+
+  load();
+  setInterval(() => { if ((!state.demo || state.setupMessage) && !document.hidden) load(); }, REFRESH_MS);
+})();
+</script>
+</body>
+</html>
