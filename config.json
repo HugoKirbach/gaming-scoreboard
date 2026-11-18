@@ -1,11 +1,11 @@
 {
-  "title": "Classement Roblox",
-  "kicker": "PS5 · entre potes",
-  "subtitle": "Qui passe le plus de temps sur Roblox ?",
+  "title": "Classement GTA VI",
+  "kicker": "Leonida · PS5 · entre potes",
+  "subtitle": "Qui passe le plus de temps à Vice City ?",
   "game": {
-    "label": "Roblox",
-    "match": "\\broblox\\b",
-    "releaseDate": null
+    "label": "GTA VI",
+    "match": "grand\\s*theft\\s*auto\\s*(vi|6)\\b|\\bgta\\s*(vi|6)\\b",
+    "releaseDate": "2026-11-19"
   },
   "players": [
     { "psn": "iiJokkers", "name": "Hugo" },

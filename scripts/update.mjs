@@ -143,6 +143,51 @@ export function summarize(titles, gameRegex) {
   };
 }
 
+async function fetchTrophyTitles(auth, accountId) {
+  const titles = [];
+  let offset = 0;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const res = await psn.getUserTitles(auth, accountId, { limit: 800, offset });
+    const batch = res?.trophyTitles ?? [];
+    titles.push(...batch);
+    const total = res?.totalItemCount ?? titles.length;
+    const next = res?.nextOffset ?? offset + batch.length;
+    if (!batch.length || titles.length >= total || next <= offset) break;
+    offset = next;
+    await sleep(DELAY_BETWEEN_CALLS_MS);
+  }
+  return titles;
+}
+
+const GRADES = ["platinum", "gold", "silver", "bronze"];
+const countOf = (o) => GRADES.reduce((s, g) => s + (Number(o?.[g]) || 0), 0);
+const gradesOf = (o) => Object.fromEntries(GRADES.map((g) => [g, Number(o?.[g]) || 0]));
+
+/** Trophées du jeu suivi (meilleure version si PS4 + PS5) et total tous jeux confondus. */
+export function summarizeTrophies(trophyTitles, gameRegex) {
+  const all = { earned: 0, ...gradesOf({}) };
+  let game = null;
+  for (const t of trophyTitles) {
+    const earned = gradesOf(t.earnedTrophies);
+    for (const g of GRADES) all[g] += earned[g];
+    all.earned += countOf(earned);
+    if (gameRegex.test(t.trophyTitleName ?? "")) {
+      const candidate = {
+        title: t.trophyTitleName,
+        platform: t.trophyTitlePlatform ?? null,
+        earned: countOf(earned),
+        defined: countOf(t.definedTrophies),
+        progress: Number(t.progress) || 0,
+        grades: earned,
+        hasPlatinum: (Number(t.definedTrophies?.platinum) || 0) > 0,
+        updatedAt: t.lastUpdatedDateTime ?? null,
+      };
+      if (!game || candidate.progress > game.progress || candidate.earned > game.earned) game = candidate;
+    }
+  }
+  return { game, all };
+}
+
 function classifyError(err) {
   const msg = String(err?.message ?? err);
   if (/introuvable|not found|404/i.test(msg)) return { status: "not_found", message: msg };
@@ -224,6 +269,14 @@ async function main() {
   history.accounts ??= {};
   history.points ??= [];
 
+  // Nouveau jeu suivi : on repart de zéro pour sa courbe (l'historique « tous les jeux » est gardé).
+  const gameSignature = String(gameRegex.source);
+  if (history.gameMatch !== gameSignature) {
+    for (const pt of history.points) pt.g = {};
+    if (history.gameMatch) console.log("Jeu suivi modifié : historique du jeu remis à zéro.");
+    history.gameMatch = gameSignature;
+  }
+
   const auth = await authenticate(npsso);
   const nowIso = new Date().toISOString();
   const lastPoint = history.points[history.points.length - 1];
@@ -242,11 +295,25 @@ async function main() {
 
       const titles = await fetchAllTitles(auth, account.accountId);
       const summary = summarize(titles, gameRegex);
-      players.push({ ...base, avatar: account.avatar ?? null, status: "ok", ...summary });
+
+      // Trophées : réglage de confidentialité séparé, donc lecture indépendante du temps de jeu.
+      let trophies;
+      try {
+        await sleep(DELAY_BETWEEN_CALLS_MS);
+        trophies = summarizeTrophies(await fetchTrophyTitles(auth, account.accountId), gameRegex);
+      } catch (err) {
+        trophies = { hidden: true, reason: classifyError(err).status };
+        console.warn(`  trophées illisibles pour ${player.psn} : ${err?.message ?? err}`);
+      }
+
+      players.push({ ...base, avatar: account.avatar ?? null, status: "ok", ...summary, trophies });
       values.g[key] = summary.game.minutes;
       values.a[key] = summary.all.minutes;
+      const tr = trophies.hidden
+        ? "trophées masqués"
+        : `trophées jeu ${trophies.game ? `${trophies.game.earned}/${trophies.game.defined}` : "—"} · total ${trophies.all.earned} (${trophies.all.platinum} platines)`;
       console.log(
-        `✔ ${player.psn} : ${config.game?.label ?? "jeu"} ${summary.game.minutes} min · tous jeux ${summary.all.minutes} min (${titles.length} jeux)`
+        `✔ ${player.psn} : ${config.game?.label ?? "jeu"} ${summary.game.minutes} min · tous jeux ${summary.all.minutes} min (${titles.length} jeux) · ${tr}`
       );
     } catch (err) {
       const { status, message } = classifyError(err);
@@ -261,6 +328,7 @@ async function main() {
         message,
         game: { minutes: prevG ?? 0, lastPlayed: null, title: null },
         all: { minutes: prevA ?? 0, games: null, top: null, lastPlayed: null },
+        trophies: null,
       });
       console.warn(`✖ ${player.psn} : ${message}`);
     }

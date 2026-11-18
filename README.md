@@ -1,6 +1,6 @@
 # Gaming scoreboard
 
-Un petit site qui classe la bande selon le temps passé sur un jeu PS5 (actuellement **Roblox** pour tester, puis **GTA VI**) et sur tous les jeux PS4/PS5 : cumul, 7 derniers jours, dernières 24 h, et une courbe « La course ».
+Un petit site qui classe la bande selon le temps passé sur un jeu PS5 (actuellement **GTA VI**) et sur tous les jeux PS4/PS5 : cumul, 7 derniers jours, dernières 24 h, une courbe « La course » et les trophées de chacun.
 
 - Les temps de jeu viennent du **PSN**, lus toutes les 30 minutes par GitHub Actions.
 - Le site est hébergé gratuitement sur **GitHub Pages** : <https://hugokirbach.github.io/gaming-scoreboard/>
@@ -41,11 +41,13 @@ L'ordre de la liste fixe la couleur de chacun dans le graphique (8 couleurs maxi
 
 Sur PS5 : *Paramètres › Utilisateurs et comptes › Confidentialité*, puis dans la rubrique *Jeux | Médias*, régler qui peut voir l'historique de jeu sur **Tout le monde**. (« Amis » devrait aussi fonctionner si tu es dans leur liste d'amis PSN.)
 
+Les trophées ont leur propre réglage dans la même rubrique (qui peut voir les trophées). S'il est privé, le temps de jeu s'affiche quand même, avec « trophées masqués ».
+
 Les profils encore verrouillés apparaissent en bas du site avec la marche à suivre.
 
-## Passer de Roblox à GTA VI
+## Changer de jeu
 
-Remplace le haut de `config.json` par :
+Le jeu suivi se règle en haut de `config.json`. Réglage actuel pour GTA VI :
 
 ```json
 "title": "Classement GTA VI",
@@ -58,7 +60,7 @@ Remplace le haut de `config.json` par :
 },
 ```
 
-Avec `releaseDate`, la page affiche un compte à rebours tant que personne n'a lancé le jeu. L'historique déjà enregistré est conservé : la courbe « tous les jeux » continue, et celle du jeu repart de la première session GTA VI.
+Avec `releaseDate`, la page affiche un compte à rebours tant que personne n'a lancé le jeu (mets `null` pour un jeu déjà sorti). Pour un autre jeu, change `label`, `match` (une partie du nom du jeu sur le PSN, par exemple `"\\broblox\\b"`) et les textes. Quand le jeu change, sa courbe repart de zéro ; l'historique « tous les jeux » est conservé.
 
 ## Entretien
 

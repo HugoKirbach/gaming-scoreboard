@@ -124,6 +124,8 @@
   .bar { grid-column: 3 / 5; height: 8px; border-radius: 999px; background: var(--track); }
   .bar i { display: block; height: 100%; border-radius: 999px; background: var(--c); transition: width 0.4s ease; }
   .warn { color: var(--orange); }
+  .troph { font-size: 0.82rem; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+  .troph.muted { color: var(--muted); }
 
   /* Graphique */
   .chart-card { padding: 18px 18px 10px; position: relative; }
@@ -415,6 +417,25 @@
     hero.append(avatar(first.p), box);
   }
 
+  const plural = (n, word) => `${nf.format(n)} ${word}${n > 1 ? "s" : ""}`;
+  const gradeTitle = (g) => `Platine ${g.platinum ?? 0} · Or ${g.gold ?? 0} · Argent ${g.silver ?? 0} · Bronze ${g.bronze ?? 0}`;
+  function trophyLine(p) {
+    const t = p.trophies;
+    if (!t) return null;
+    if (t.hidden) return { text: "🏆 trophées masqués", title: "Trophées privés dans les réglages de confidentialité PSN", muted: true };
+    if (state.scope === "game") {
+      const g = t.game;
+      if (!g) return current(p) > 0 ? { text: "🏆 0 trophée", muted: true } : null;
+      let text = `🏆 ${g.earned}/${g.defined} · ${g.progress} %`;
+      if (g.grades?.platinum > 0) text += " · platine ✓";
+      return { text, title: gradeTitle(g.grades || {}) };
+    }
+    const a = t.all || {};
+    let text = `🏆 ${plural(a.earned || 0, "trophée")}`;
+    if (a.platinum) text += ` · ${plural(a.platinum, "platine")}`;
+    return { text, title: gradeTitle(a) };
+  }
+
   function renderBoard(ranked) {
     const board = $("board");
     board.replaceChildren();
@@ -435,6 +456,12 @@
         meta.appendChild(w);
       }
       who.appendChild(meta);
+      const tl = trophyLine(p);
+      if (tl) {
+        const t = el("div", "troph" + (tl.muted ? " muted" : ""), tl.text);
+        if (tl.title) t.title = tl.title;
+        who.appendChild(t);
+      }
 
       const val = el("div", "val");
       val.appendChild(el("strong", null, fmtDur(r.value)));
@@ -776,6 +803,15 @@
       key: pp[1].toLowerCase(), psn: pp[1], name: pp[0], order: i, avatar: null, status: "ok",
       game: { minutes: g[i], lastPlayed: last[i] ? new Date(last[i]).toISOString() : null, title: label },
       all: { minutes: pp[3] + g[i], games: 18 + i * 5, top: null, lastPlayed: last[i] ? new Date(last[i]).toISOString() : null },
+      trophies: (() => {
+        const earned = Math.min(55, Math.floor(g[i] / 50));
+        const gold = Math.floor(earned / 9), silver = Math.floor(earned / 4), bronze = earned - gold - silver;
+        const allEarned = Math.floor(pp[3] / 9);
+        return {
+          game: earned ? { title: label, earned, defined: 56, progress: Math.round((earned / 56) * 100), grades: { platinum: 0, gold, silver, bronze }, hasPlatinum: true } : null,
+          all: { earned: allEarned, platinum: Math.floor(allEarned / 160), gold: Math.floor(allEarned / 12), silver: Math.floor(allEarned / 4), bronze: allEarned - Math.floor(allEarned / 160) - Math.floor(allEarned / 12) - Math.floor(allEarned / 4) },
+        };
+      })(),
     }));
     players.push({ key: "kev_ps5", psn: "kev_ps5", name: "Kévin", order: 6, avatar: null, status: "private",
       game: { minutes: 0 }, all: { minutes: 0 } });
