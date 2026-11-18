@@ -2,7 +2,7 @@ name: Mise à jour du classement
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # toutes les 30 minutes (GitHub peut décaler de quelques minutes)
+    - cron: "17 * * * *"     # toutes les heures, à hh:17 (GitHub peut décaler de quelques minutes)
   workflow_dispatch:          # bouton « Run workflow » dans l'onglet Actions
   push:
     branches: [main]          # relance quand tu modifies config.json ou la page

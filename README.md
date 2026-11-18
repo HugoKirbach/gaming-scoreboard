@@ -2,7 +2,7 @@
 
 Un petit site qui classe la bande selon le temps passé sur un jeu PS5 (actuellement **GTA VI**) et sur tous les jeux PS4/PS5 : cumul, 7 derniers jours, dernières 24 h, une courbe « La course » et les trophées de chacun.
 
-- Les temps de jeu viennent du **PSN**, lus toutes les 30 minutes par GitHub Actions.
+- Les temps de jeu viennent du **PSN**, lus toutes les heures par GitHub Actions.
 - Le site est hébergé gratuitement sur **GitHub Pages** : <https://hugokirbach.github.io/gaming-scoreboard/>
 - Rockstar ne fournit plus de stats publiques depuis la fermeture du Social Club, d'où le passage par le PSN.
 
@@ -71,7 +71,7 @@ Avec `releaseDate`, la page affiche un compte à rebours tant que personne n'a l
 ## Bon à savoir
 
 - Le temps de jeu est celui que Sony enregistre (celui de la fiche du jeu sur PS5). Il arrive qu'il se mette à jour avec un peu de retard, souvent à la fin d'une session.
-- L'accès passe par [psn-api](https://psn-api.achievements.app), une librairie **non officielle**. Sony peut la casser du jour au lendemain. Le script reste volontairement léger (une lecture par joueur toutes les 30 min) pour ne pas solliciter le PSN.
+- L'accès passe par [psn-api](https://psn-api.achievements.app), une librairie **non officielle**. Sony peut la casser du jour au lendemain. Le script reste volontairement léger (une lecture par joueur toutes les heures) pour ne pas solliciter le PSN.
 - Le jeu est reconnu par son nom (`game.match` dans `config.json`, une expression régulière insensible à la casse).
 - Le site est public : tout le monde avec le lien voit les pseudos et les heures. Préviens la bande.
 

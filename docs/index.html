@@ -6,7 +6,7 @@
 <title>Classement</title>
 <meta name="description" content="Qui a le plus joué dans la bande ? Classement du temps de jeu PS5, mis à jour automatiquement depuis le PSN.">
 <meta property="og:title" content="Classement entre potes">
-<meta property="og:description" content="Qui a le plus joué ? Temps de jeu PS5 mis à jour toutes les 30 min.">
+<meta property="og:description" content="Qui a le plus joué ? Temps de jeu PS5 mis à jour toutes les heures.">
 <meta name="theme-color" content="#0f0b1d">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffc15e'/%3E%3Cstop offset='1' stop-color='%23ff4fa0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='28' fill='url(%23g)'/%3E%3Crect x='4' y='38' width='56' height='4' fill='%230f0b1d'/%3E%3Crect x='4' y='47' width='56' height='5' fill='%230f0b1d'/%3E%3C/svg%3E">
 <style>
@@ -509,7 +509,7 @@
     foot.replaceChildren();
     const when = state.demo ? "Données de démonstration" : `Mis à jour ${relTime(data.updatedAt) ?? "—"}`;
     foot.append(
-      el("p", null, `${when} · actualisation toutes les ${data.refreshMinutes ?? 30} min`),
+      el("p", null, `${when} · actualisation ${(data.refreshMinutes ?? 60) === 60 ? "toutes les heures" : `toutes les ${data.refreshMinutes} min`}`),
       el("p", null, "Temps de jeu lu sur le PSN (API non officielle), parfois avec un peu de retard. Site entre amis, sans lien avec Rockstar Games ni Sony.")
     );
   }
@@ -821,7 +821,7 @@
         kicker: meta.kicker,
         subtitle: meta.subtitle,
         game: { label, releaseDate: `${ld.getFullYear()}-${pad(ld.getMonth() + 1)}-${pad(ld.getDate())}` },
-        updatedAt: new Date(now).toISOString(), refreshMinutes: meta.refreshMinutes || 30, players,
+        updatedAt: new Date(now).toISOString(), refreshMinutes: meta.refreshMinutes || 60, players,
       },
       history: { points },
     };

@@ -24,8 +24,8 @@ const DELAY_BETWEEN_CALLS_MS = 400;
 const MAX_HISTORY_POINTS = 4000;
 // Si le dernier point date de plus longtemps que ça, on ajoute un point "juste avant"
 // pour que la courbe ne monte pas en pente douce sur des heures où personne n'a joué.
-const ANCHOR_GAP_MS = 45 * 60 * 1000;
-const RUN_INTERVAL_MS = 30 * 60 * 1000;
+const ANCHOR_GAP_MS = 90 * 60 * 1000;
+const RUN_INTERVAL_MS = 60 * 60 * 1000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const keyOf = (onlineId) => String(onlineId).trim().toLowerCase();
