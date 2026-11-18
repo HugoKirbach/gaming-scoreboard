@@ -8,8 +8,9 @@
     "releaseDate": null
   },
   "players": [
-    { "psn": "TON_PSEUDO_PSN", "name": "Moi" },
-    { "psn": "PSEUDO_AMI_1", "name": "Ami 1" },
-    { "psn": "PSEUDO_AMI_2", "name": "Ami 2" }
+    { "psn": "iiJokkers", "name": "Hugo" },
+    { "psn": "Kane_Shinojin", "name": "Nabil" },
+    { "psn": "ErgO-57", "name": "John" },
+    { "psn": "ThomLaCastagne", "name": "Thomas" }
   ]
 }
