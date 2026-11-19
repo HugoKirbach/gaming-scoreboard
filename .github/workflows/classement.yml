@@ -2,7 +2,7 @@ name: Mise à jour du classement
 
 on:
   schedule:
-    - cron: "17 * * * *"     # toutes les heures, à hh:17 (GitHub peut décaler de quelques minutes)
+    - cron: "17 * * * *"     # filet de sécurité : GitHub saute souvent ces créneaux, la minuterie fait le vrai travail
   workflow_dispatch:          # bouton « Run workflow » dans l'onglet Actions
   push:
     branches: [main]          # relance quand tu modifies config.json ou la page
@@ -11,6 +11,7 @@ permissions:
   contents: write   # pour sauvegarder docs/history.json
   pages: write      # pour publier le site
   id-token: write
+  actions: write    # pour relancer la minuterie
 
 concurrency:
   group: classement
@@ -58,3 +59,10 @@ jobs:
 
       - id: deploy
         uses: actions/deploy-pages@v4
+
+      # Programme la prochaine mise à jour dans ~1 h (voir minuterie.yml), même si une étape a échoué.
+      - name: Programmer la prochaine mise à jour
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run minuterie.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"

@@ -64,7 +64,7 @@ Avec `releaseDate`, la page affiche un compte à rebours tant que personne n'a l
 
 ## Bouton « Actualiser » et mise à jour horaire fiable
 
-GitHub saute souvent les mises à jour programmées. Un petit relais gratuit chez Cloudflare (`cloudflare/worker.js`) règle les deux problèmes : il lance la mise à jour quand quelqu'un clique sur **Actualiser** (au plus une fois toutes les 5 minutes) et toutes les heures via un déclencheur Cloudflare. Ton jeton GitHub reste secret chez Cloudflare, jamais dans la page.
+Un petit relais gratuit chez Cloudflare (`cloudflare/worker.js`) lance la mise à jour quand quelqu'un clique sur **Actualiser** (au plus une fois toutes les 5 minutes). Ton jeton GitHub reste secret chez Cloudflare, jamais dans la page.
 
 1. **Jeton GitHub** : <https://github.com/settings/personal-access-tokens/new>
    - *Repository access* : *Only select repositories* › `gaming-scoreboard`
@@ -74,10 +74,14 @@ GitHub saute souvent les mises à jour programmées. Un petit relais gratuit che
    - *Workers & Pages* › *Create* › *Hello World*, nomme-le par exemple `classement-relais`, puis *Deploy*.
    - *Edit code* : remplace tout par le contenu de `cloudflare/worker.js`, puis *Deploy*.
    - *Settings* › *Variables and Secrets* › *Add* : type **Secret**, nom `GITHUB_TOKEN`, valeur : le jeton de l'étape 1.
-   - *Settings* › *Triggers* › *Cron Triggers* › *Add* : `17 * * * *` (toutes les heures).
+   - Facultatif : *Settings* › *Triggers* › *Cron Triggers* › *Add* `17 * * * *` pour un second déclencheur horaire, en plus de la minuterie GitHub.
 3. **Brancher le bouton** : copie l'adresse du relais (`https://classement-relais.<ton-compte>.workers.dev`) dans `config.json`, champ `refreshUrl`. Le bouton apparaît sur le site à la mise à jour suivante.
 
 Le bouton ne fait pas aller Sony plus vite : si le PSN n'a pas encore enregistré une session, elle n'apparaîtra qu'au moment où Sony la publie.
+
+## Mise à jour horaire
+
+La programmation « schedule » de GitHub saute souvent des créneaux. Chaque mise à jour lance donc à la fin une **minuterie** (`.github/workflows/minuterie.yml`) qui attend environ une heure puis relance la mise à jour suivante. Une seule minuterie tourne à la fois. Si la chaîne s'arrête (panne GitHub, exécution annulée à la main), elle repart à la prochaine modification du dépôt, au prochain créneau programmé que GitHub n'aura pas sauté, ou avec *Actions › Mise à jour du classement › Run workflow*.
 
 ## Entretien
 
