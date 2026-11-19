@@ -17,7 +17,8 @@ const CONFIG_PATH = new URL("config.json", ROOT);
 const DATA_PATH = new URL("docs/data.json", ROOT);
 const HISTORY_PATH = new URL("docs/history.json", ROOT);
 
-const CATEGORIES = "ps4_game,ps5_native_game";
+// "unknown" : catégorie parfois attribuée aux jeux tout juste sortis.
+const CATEGORIES = "ps4_game,ps5_native_game,unknown";
 const PAGE_SIZE = 200;
 const MAX_PAGES = 15;
 const DELAY_BETWEEN_CALLS_MS = 400;
@@ -295,6 +296,16 @@ async function main() {
 
       const titles = await fetchAllTitles(auth, account.accountId);
       const summary = summarize(titles, gameRegex);
+
+      // Journal : derniers jeux lancés, pour vérifier le nom et la catégorie renvoyés par le PSN.
+      const recent = [...titles]
+        .sort((a, b) => String(b.lastPlayedDateTime ?? "").localeCompare(String(a.lastPlayedDateTime ?? "")))
+        .slice(0, 3);
+      for (const t of recent) {
+        console.log(
+          `  · ${JSON.stringify(t.name)} [${t.category}] ${t.playDuration} — lancé ${t.lastPlayedDateTime} — ${gameRegex.test(t.name ?? "") ? "reconnu" : "non reconnu"}`
+        );
+      }
 
       // Trophées : réglage de confidentialité séparé, donc lecture indépendante du temps de jeu.
       let trophies;
