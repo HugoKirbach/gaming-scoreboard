@@ -19,6 +19,8 @@ Modifie `config.json` : un bloc par personne, avec son **pseudo PSN exact** (`ps
 ]
 ```
 
+Pour corriger un compteur à la main (session perdue par le PSN…), ajoute `"gameBonusMinutes": 300` (en minutes, négatif pour retirer) au joueur : c'est compté en permanence dans le jeu suivi et dans le total, et signalé discrètement sur sa ligne. Pense à le retirer si tu changes de jeu suivi.
+
 L'ordre de la liste fixe la couleur de chacun dans le graphique (8 couleurs maximum ; au-delà, les joueurs restent dans le classement mais pas dans la courbe).
 
 ### 2. Donner l'accès au PSN (jeton NPSSO)

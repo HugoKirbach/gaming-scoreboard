@@ -10,7 +10,7 @@
   },
   "players": [
     { "psn": "iiJokkers", "name": "Hugo" },
-    { "psn": "Kane_Shinojin", "name": "Nabil" },
+    { "psn": "Kane_Shinojin", "name": "Nabil", "gameBonusMinutes": 300, "bonusNote": "+5 h ajoutées à la main (bug du compteur PSN, 19/11)" },
     { "psn": "ErgO-57", "name": "John" },
     { "psn": "ThomLaCastagne", "name": "Thomas" },
     { "psn": "ElCococs", "name": "Coco" }

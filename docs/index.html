@@ -467,6 +467,7 @@
       const who = el("div", "who");
       who.appendChild(el("div", "name", p.name));
       const metaParts = [`@${p.psn}`];
+      if (state.scope === "game" && p.game?.bonus) metaParts.push(`dont ${fmtDur(Math.abs(p.game.bonus))} ${p.game.bonus > 0 ? "ajoutées" : "retirées"} à la main`);
       const lp = relTime(lastPlayed(p));
       if (lp && current(p) > 0) metaParts.push(`joué ${lp}`);
       const meta = el("div", "meta", metaParts.join(" · "));

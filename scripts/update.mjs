@@ -298,6 +298,14 @@ async function main() {
       const titles = await fetchAllTitles(auth, account.accountId);
       const summary = summarize(titles, gameRegex);
 
+      // Ajustement manuel permanent (config.json : gameBonusMinutes), compté dans le jeu et dans le total.
+      const bonus = Math.round(Number(player.gameBonusMinutes) || 0);
+      if (bonus) {
+        summary.game.minutes = Math.max(0, summary.game.minutes + bonus);
+        summary.all.minutes = Math.max(0, summary.all.minutes + bonus);
+        summary.game.bonus = bonus;
+      }
+
       // Journal : derniers jeux lancés, pour vérifier le nom et la catégorie renvoyés par le PSN.
       const recent = [...titles]
         .sort((a, b) => String(b.lastPlayedDateTime ?? "").localeCompare(String(a.lastPlayedDateTime ?? "")))
