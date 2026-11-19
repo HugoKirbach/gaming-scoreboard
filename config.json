@@ -2,6 +2,7 @@
   "title": "Classement GTA VI",
   "kicker": "Leonida · PS5 · entre potes",
   "subtitle": "Qui passe le plus de temps à Vice City ?",
+  "refreshUrl": "",
   "game": {
     "label": "GTA VI",
     "match": "grand\\s*theft\\s*auto\\s*(vi|6)\\b|\\bgta\\s*(vi|6)\\b",

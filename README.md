@@ -2,7 +2,7 @@
 
 Un petit site qui classe la bande selon le temps passé sur un jeu PS5 (actuellement **GTA VI**) et sur tous les jeux PS4/PS5 : cumul, 7 derniers jours, dernières 24 h, une courbe « La course » et les trophées de chacun.
 
-- Les temps de jeu viennent du **PSN**, lus toutes les heures par GitHub Actions.
+- Les temps de jeu viennent du **PSN**, lus toutes les heures par GitHub Actions, ou à la demande avec le bouton **Actualiser**.
 - Le site est hébergé gratuitement sur **GitHub Pages** : <https://hugokirbach.github.io/gaming-scoreboard/>
 - Rockstar ne fournit plus de stats publiques depuis la fermeture du Social Club, d'où le passage par le PSN.
 
@@ -61,6 +61,23 @@ Le jeu suivi se règle en haut de `config.json`. Réglage actuel pour GTA VI :
 ```
 
 Avec `releaseDate`, la page affiche un compte à rebours tant que personne n'a lancé le jeu (mets `null` pour un jeu déjà sorti). Pour un autre jeu, change `label`, `match` (une partie du nom du jeu sur le PSN, par exemple `"\\broblox\\b"`) et les textes. Quand le jeu change, sa courbe repart de zéro ; l'historique « tous les jeux » est conservé.
+
+## Bouton « Actualiser » et mise à jour horaire fiable
+
+GitHub saute souvent les mises à jour programmées. Un petit relais gratuit chez Cloudflare (`cloudflare/worker.js`) règle les deux problèmes : il lance la mise à jour quand quelqu'un clique sur **Actualiser** (au plus une fois toutes les 5 minutes) et toutes les heures via un déclencheur Cloudflare. Ton jeton GitHub reste secret chez Cloudflare, jamais dans la page.
+
+1. **Jeton GitHub** : <https://github.com/settings/personal-access-tokens/new>
+   - *Repository access* : *Only select repositories* › `gaming-scoreboard`
+   - *Permissions* › *Actions* : **Read and write**
+   - Génère-le et copie-le.
+2. **Relais Cloudflare** (compte gratuit sur <https://dash.cloudflare.com>) :
+   - *Workers & Pages* › *Create* › *Hello World*, nomme-le par exemple `classement-relais`, puis *Deploy*.
+   - *Edit code* : remplace tout par le contenu de `cloudflare/worker.js`, puis *Deploy*.
+   - *Settings* › *Variables and Secrets* › *Add* : type **Secret**, nom `GITHUB_TOKEN`, valeur : le jeton de l'étape 1.
+   - *Settings* › *Triggers* › *Cron Triggers* › *Add* : `17 * * * *` (toutes les heures).
+3. **Brancher le bouton** : copie l'adresse du relais (`https://classement-relais.<ton-compte>.workers.dev`) dans `config.json`, champ `refreshUrl`. Le bouton apparaît sur le site à la mise à jour suivante.
+
+Le bouton ne fait pas aller Sony plus vite : si le PSN n'a pas encore enregistré une session, elle n'apparaîtra qu'au moment où Sony la publie.
 
 ## Entretien
 

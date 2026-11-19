@@ -238,6 +238,7 @@ function siteMeta(config) {
     subtitle: config.subtitle ?? `Qui passe le plus de temps sur ${label} ?`,
     game: { label, releaseDate: config.game?.releaseDate ?? null },
     refreshMinutes: RUN_INTERVAL_MS / 60000,
+    refreshUrl: /^https:\/\//.test(config.refreshUrl ?? "") ? config.refreshUrl : null,
   };
 }
 

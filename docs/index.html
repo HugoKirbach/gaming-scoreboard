@@ -30,6 +30,7 @@
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; background: var(--bg); color: var(--text); }
   body { min-height: 100vh; line-height: 1.45; -webkit-font-smoothing: antialiased; }
 
@@ -64,7 +65,19 @@
     background: rgba(63, 216, 200, 0.09); color: #c4f3ee; box-shadow: inset 0 0 0 1px rgba(63, 216, 200, 0.28);
   }
 
-  .filters { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 14px; }
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 22px 0 14px; }
+  .fresh { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--muted); }
+  .refresh {
+    appearance: none; border: 0; font: inherit; font-size: 0.88rem; font-weight: 650; color: var(--text); cursor: pointer;
+    background: rgba(28, 22, 48, 0.85); box-shadow: inset 0 0 0 1px var(--ring); padding: 8px 14px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .refresh:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--teal); }
+  .refresh:disabled { cursor: default; color: var(--text-2); }
+  .refresh:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .refresh .ico { display: inline-block; line-height: 1; }
+  .refresh.busy .ico { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(28, 22, 48, 0.85); box-shadow: inset 0 0 0 1px var(--ring); }
   .seg button {
     appearance: none; border: 0; background: transparent; color: var(--text-2); font: inherit; font-size: 0.9rem;
@@ -172,7 +185,8 @@
     .sun { width: 220px; height: 220px; right: -60px; top: -50px; }
     .chart-card { padding: 14px 12px 8px; }
   }
-  @media (prefers-reduced-motion: reduce) { .bar i, #main { transition: none; } }
+  @media (max-width: 520px) { .fresh { margin-left: 0; width: 100%; justify-content: space-between; } }
+  @media (prefers-reduced-motion: reduce) { .bar i, #main { transition: none; } .refresh.busy .ico { animation: none; } }
 </style>
 </head>
 <body>
@@ -195,6 +209,10 @@
       <button type="button" role="radio" data-value="total" aria-checked="true">Total</button>
       <button type="button" role="radio" data-value="week" aria-checked="false">7 jours</button>
       <button type="button" role="radio" data-value="day" aria-checked="false">24 h</button>
+    </div>
+    <div class="fresh">
+      <span id="freshTxt" role="status" aria-live="polite"></span>
+      <button type="button" class="refresh" id="refreshBtn" hidden><span class="ico" aria-hidden="true">↻</span><span id="refreshLbl">Actualiser</span></button>
     </div>
   </nav>
 
@@ -367,6 +385,7 @@
     renderChart(ranked, now, preRelease);
     renderLocked(players.filter((p) => !(p.status === "ok" || p.status === "stale")));
     renderFooter(data);
+    renderFresh();
   }
 
   function renderHero(ranked, preRelease, rel, label) {
@@ -507,9 +526,9 @@
   function renderFooter(data) {
     const foot = $("foot");
     foot.replaceChildren();
-    const when = state.demo ? "Données de démonstration" : `Mis à jour ${relTime(data.updatedAt) ?? "—"}`;
+    const every = (data.refreshMinutes ?? 60) === 60 ? "toutes les heures" : `toutes les ${data.refreshMinutes} min`;
     foot.append(
-      el("p", null, `${when} · actualisation ${(data.refreshMinutes ?? 60) === 60 ? "toutes les heures" : `toutes les ${data.refreshMinutes} min`}`),
+      el("p", null, state.demo ? "Données de démonstration" : `Actualisation automatique ${every}`),
       el("p", null, "Temps de jeu lu sur le PSN (API non officielle), parfois avec un peu de retard. Site entre amis, sans lien avec Rockstar Games ni Sony.")
     );
   }
@@ -826,6 +845,79 @@
       history: { points },
     };
   }
+
+  // ---------- bouton « Actualiser » ----------
+  const refresh = { busy: false, msg: null, timer: null };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function renderFresh() {
+    const url = state.data?.refreshUrl;
+    $("refreshBtn").hidden = state.demo || !/^https:\/\//.test(url || "");
+    if (refresh.busy || refresh.msg) return;
+    $("freshTxt").textContent = state.demo ? "" : `Mis à jour ${relTime(state.data?.updatedAt) ?? "—"}`;
+  }
+  function setBusy(busy, text) {
+    refresh.busy = busy;
+    const btn = $("refreshBtn");
+    btn.disabled = busy;
+    btn.classList.toggle("busy", busy);
+    $("refreshLbl").textContent = busy ? "Actualisation…" : "Actualiser";
+    if (text) $("freshTxt").textContent = text;
+  }
+  function flash(text) {
+    refresh.msg = text;
+    $("freshTxt").textContent = text;
+    clearTimeout(refresh.timer);
+    refresh.timer = setTimeout(() => { refresh.msg = null; renderFresh(); }, 7000);
+  }
+  async function fetchFresh() {
+    const v = Date.now();
+    const data = await fetch(`data.json?v=${v}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null));
+    if (!data || data.setup) return null;
+    const history = await fetch(`history.json?v=${v}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { points: [] })).catch(() => ({ points: [] }));
+    return { data, history };
+  }
+  async function waitForNewData(before) {
+    const deadline = Date.now() + 4 * 60e3;
+    while (Date.now() < deadline) {
+      await sleep(10000);
+      try {
+        const fresh = await fetchFresh();
+        if (fresh && fresh.data.updatedAt !== before) {
+          Object.assign(state, fresh, { demo: false, setupMessage: null });
+          render();
+          return true;
+        }
+      } catch { /* on réessaie */ }
+    }
+    return false;
+  }
+  $("refreshBtn").addEventListener("click", async () => {
+    const url = state.data?.refreshUrl;
+    if (refresh.busy || !url) return;
+    const before = state.data.updatedAt;
+    refresh.msg = null;
+    setBusy(true, "Lancement…");
+    try {
+      const res = await fetch(url, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        setBusy(false);
+        const min = Math.max(1, Math.ceil((body.retryAfter || 60) / 60));
+        return flash(`Déjà actualisé il y a peu, réessaie dans ${min} min`);
+      }
+      if (!res.ok) throw new Error(body.message || `HTTP ${res.status}`);
+      setBusy(true, "Lecture du PSN… (environ 1 min)");
+      const ok = await waitForNewData(before);
+      setBusy(false);
+      flash(ok ? "À jour ✓" : "Toujours en cours, recharge la page dans une minute");
+    } catch (err) {
+      console.warn("Actualisation impossible :", err);
+      setBusy(false);
+      flash("Actualisation impossible pour le moment");
+    }
+  });
 
   async function load() {
     const params = new URLSearchParams(location.search);
