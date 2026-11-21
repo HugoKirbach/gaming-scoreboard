@@ -83,7 +83,7 @@ Le bouton ne fait pas aller Sony plus vite : si le PSN n'a pas encore enregistr�
 
 ## Mise à jour horaire
 
-La programmation « schedule » de GitHub saute souvent des créneaux. Chaque mise à jour lance donc à la fin une **minuterie** (`.github/workflows/minuterie.yml`) qui attend environ une heure puis relance la mise à jour suivante. Une seule minuterie tourne à la fois. Si la chaîne s'arrête (panne GitHub, exécution annulée à la main), elle repart à la prochaine modification du dépôt, au prochain créneau programmé que GitHub n'aura pas sauté, ou avec *Actions › Mise à jour du classement › Run workflow*.
+La programmation « schedule » de GitHub saute souvent des créneaux. Chaque mise à jour lance donc à la fin une **minuterie** (`.github/workflows/minuterie.yml`) qui attend environ une heure puis relance la mise à jour suivante. Une seule minuterie tourne à la fois. **Heures creuses** : pas de mise à jour automatique entre 1 h et 12 h (heure de Paris) ; la première de la journée a lieu à midi pile. Les horaires se règlent dans `minuterie.yml` (`QUIET_START`, `QUIET_END`). Une mise à jour lancée à la main, ou par le bouton, fonctionne à toute heure. Si la chaîne s'arrête (panne GitHub, exécution annulée à la main), elle repart à la prochaine modification du dépôt, au prochain créneau programmé que GitHub n'aura pas sauté, ou avec *Actions › Mise à jour du classement › Run workflow*.
 
 ## Entretien
 

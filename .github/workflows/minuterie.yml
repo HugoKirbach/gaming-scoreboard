@@ -2,6 +2,8 @@ name: Minuterie
 
 # Lancée à la fin de chaque mise à jour du classement : attend ~1 h puis relance la mise à jour.
 # Plus fiable que la programmation « schedule » de GitHub, qui saute souvent des heures.
+# Heures creuses (heure de Paris) : pas de mise à jour automatique entre QUIET_START et QUIET_END,
+# la suivante a lieu à QUIET_END pile.
 # Une seule minuterie à la fois : une nouvelle annule l'ancienne.
 
 on:
@@ -17,12 +19,43 @@ concurrency:
 jobs:
   attendre:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 345
     steps:
       - name: Attendre la prochaine mise à jour
-        run: sleep 3420   # 57 min (+ ~1-3 min de mise à jour = environ une fois par heure)
+        id: wait
+        env:
+          QUIET_START: 1    # 1 h du matin
+          QUIET_END: 12     # midi
+          INTERVAL: 3420    # 57 min (+ ~1-3 min de mise à jour = environ une fois par heure)
+          MAX_WAIT: 19800   # 5 h 30 : au-delà, on enchaîne une nouvelle minuterie (limite GitHub : 6 h)
+        run: |
+          now=${NOW_OVERRIDE:-$(date +%s)}
+          target=$((now + INTERVAL))
+          hour() { TZ=Europe/Paris date -d "@$1" +%-H; }
+          quiet() { [ "$1" -ge "$QUIET_START" ] && [ "$1" -lt "$QUIET_END" ]; }
 
-      - name: Lancer la mise à jour du classement
+          if quiet "$(hour "$now")" || quiet "$(hour "$target")"; then
+            day=$(TZ=Europe/Paris date -d "@$now" +%F)
+            target=$(TZ=Europe/Paris date -d "$day $QUIET_END:00" +%s)
+            if [ "$target" -le "$now" ]; then
+              day=$(TZ=Europe/Paris date -d "$day + 1 day" +%F)
+              target=$(TZ=Europe/Paris date -d "$day $QUIET_END:00" +%s)
+            fi
+            echo "Heures creuses : prochaine mise à jour le $(TZ=Europe/Paris date -d "@$target" '+%d/%m à %H:%M') (heure de Paris)."
+          fi
+
+          wait=$((target - now))
+          if [ "$wait" -gt "$MAX_WAIT" ]; then
+            echo "Attente de $((MAX_WAIT / 60)) min, puis nouvelle minuterie."
+            echo "next=minuterie" >> "$GITHUB_OUTPUT"
+            ${DRY_RUN:+echo} sleep "$MAX_WAIT"
+          else
+            echo "Mise à jour dans $((wait / 60)) min."
+            echo "next=classement" >> "$GITHUB_OUTPUT"
+            ${DRY_RUN:+echo} sleep "$wait"
+          fi
+
+      - name: Lancer la suite
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run classement.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"
+        run: gh workflow run "${{ steps.wait.outputs.next }}.yml" --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"
