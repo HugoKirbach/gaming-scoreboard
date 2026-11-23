@@ -18,13 +18,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # GitHub lance parfois les créneaux programmés avec des heures de retard :
+  # on ignore ceux qui tombent dans les heures creuses de Paris (1 h - 12 h).
+  heures-creuses:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - id: check
+        run: |
+          h=$(TZ=Europe/Paris date +%-H)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$h" -ge 1 ] && [ "$h" -lt 12 ]; then
+            echo "Heures creuses à Paris (${h} h) : créneau programmé ignoré."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
   update:
+    needs: heures-creuses
+    if: needs.heures-creuses.outputs.skip != 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      # Dernière version de la branche (et non celle du déclenchement), pour repartir
+      # de l'historique poussé par une mise à jour qui aurait tourné juste avant.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
