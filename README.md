@@ -64,6 +64,17 @@ Le jeu suivi se règle en haut de `config.json`. Réglage actuel pour GTA VI :
 
 Avec `releaseDate`, la page affiche un compte à rebours tant que personne n'a lancé le jeu (mets `null` pour un jeu déjà sorti). Pour un autre jeu, change `label`, `match` (une partie du nom du jeu sur le PSN, par exemple `"\\broblox\\b"`) et les textes. Quand le jeu change, sa courbe repart de zéro ; l'historique « tous les jeux » est conservé.
 
+## Onglet Stats
+
+Le PSN n'enregistre le temps de jeu qu'à la fermeture du jeu. Chaque hausse vue lors d'un relevé correspond donc à une session terminée entre ce relevé et le précédent, et commencée autant de minutes plus tôt. L'onglet **Stats** en déduit, avec une fourchette :
+
+- les records (plus longue session, plus grosse journée, plus de sessions) ;
+- le planning des sessions (foncé : joué à coup sûr, clair : plage possible, bandes grises : pas de relevé) ;
+- « Qui joue quand » : temps cumulé par heure de la journée ;
+- les stats de chacun et le journal des sessions.
+
+Chaque point de `docs/history.json` garde pour cela l'heure du relevé précédent (`p`), et `lastCheck` celle du dernier relevé. Quand les relevés sont espacés de plus de 3 h (la nuit), une hausse peut regrouper plusieurs sessions : c'est signalé. Les minutes ajoutées à la main (`gameBonusMinutes`, à partir de `bonusSince`) ne comptent pas comme une session.
+
 ## Bouton « Actualiser » et mise à jour horaire fiable
 
 Un petit relais gratuit chez Cloudflare (`cloudflare/worker.js`) lance la mise à jour quand quelqu'un clique sur **Actualiser** (au plus une fois toutes les 5 minutes). Ton jeton GitHub reste secret chez Cloudflare, jamais dans la page.

@@ -163,6 +163,57 @@
   .tip .r b { font-variant-numeric: tabular-nums; }
   .tip .r span { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; }
 
+  /* Onglets */
+  .tabs { display: flex; gap: 4px; margin: 22px 0 0; box-shadow: inset 0 -1px 0 var(--grid); }
+  .tabs button {
+    appearance: none; border: 0; background: transparent; color: var(--text-2); font: inherit; font-weight: 750;
+    font-size: 0.98rem; padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent;
+  }
+  .tabs button:hover { color: var(--text); }
+  .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--pink); }
+  .tabs button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+
+  /* Stats */
+  .card.pad { padding: 18px; position: relative; }
+  .note { margin: 0; color: var(--text-2); font-size: 0.88rem; }
+  .empty-card { padding: 22px; margin: 0; color: var(--text-2); }
+  .hint { margin: 10px 0 0; font-size: 0.8rem; color: var(--muted); }
+  .records { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .record { padding: 14px 16px; }
+  .record .k { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange); font-weight: 800; }
+  .record .v { font-size: 1.6rem; font-weight: 800; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .record .s { font-size: 0.84rem; color: var(--text-2); }
+  .plan { position: relative; display: grid; grid-template-columns: 72px minmax(0, 1fr); }
+  .plan-labels { padding-top: 26px; }
+  .plan-labels div { height: 30px; display: flex; align-items: center; gap: 6px; font-size: 0.84rem; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plan-labels i, .heat .n i, .ptile .hd i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .plan-scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--axis) transparent; }
+  .plan-scroll svg { display: block; }
+  .heat { display: grid; grid-template-columns: 70px repeat(24, minmax(0, 1fr)); gap: 2px; }
+  .heat .h { font-size: 0.68rem; color: var(--muted); height: 16px; white-space: nowrap; overflow: visible; }
+  .heat .n { font-size: 0.82rem; color: var(--text-2); display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; }
+  .heat .c { height: 22px; border-radius: 3px; }
+  .legend .ramp { display: inline-flex; gap: 2px; }
+  .legend .ramp i { width: 12px; height: 8px; border-radius: 2px; }
+  .ptiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .ptile { padding: 16px; }
+  .ptile .hd { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+  .ptile .big { font-size: 1.7rem; font-weight: 800; margin: 6px 0 6px; font-variant-numeric: tabular-nums; }
+  .ptile ul { list-style: none; margin: 0; padding: 0; font-size: 0.86rem; color: var(--text-2); display: grid; gap: 3px; }
+  .ptile b { color: var(--text); font-weight: 700; }
+  .ptile .none { margin-top: 8px; font-size: 0.82rem; color: var(--muted); }
+  .journal { list-style: none; margin: 8px 0 0; padding: 0; }
+  .journal li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 3px 10px; padding: 10px 0; box-shadow: 0 -1px 0 var(--grid); align-items: baseline; }
+  .journal li:first-child { box-shadow: none; }
+  .journal li > i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); align-self: center; }
+  .journal .w { font-weight: 750; }
+  .journal .d { font-variant-numeric: tabular-nums; font-weight: 800; text-align: right; }
+  .journal .r { grid-column: 2 / 4; font-size: 0.84rem; color: var(--text-2); }
+  .journal .x { grid-column: 2 / 4; font-size: 0.8rem; color: var(--muted); }
+  .more { appearance: none; border: 0; background: var(--surface-2); color: var(--text); font: inherit; font-weight: 650; font-size: 0.88rem; padding: 8px 14px; border-radius: 999px; cursor: pointer; margin-top: 10px; }
+  .more:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .tip .t + .t { margin-top: 2px; }
+
   /* Profils bloqués */
   .locked { padding: 18px; }
   .locked p { margin: 6px 0 12px; color: var(--text-2); font-size: 0.92rem; }
@@ -199,6 +250,11 @@
     <p class="sub" id="subtitle"></p>
     <p class="banner" id="demoBanner" hidden></p>
   </header>
+
+  <div class="tabs" role="tablist" aria-label="Vues">
+    <button type="button" role="tab" id="tabBoard" aria-selected="true" aria-controls="main">Classement</button>
+    <button type="button" role="tab" id="tabStats" aria-selected="false" aria-controls="stats">Stats</button>
+  </div>
 
   <nav class="filters" aria-label="Filtres">
     <div class="seg" role="radiogroup" aria-label="Jeu" id="scopeSeg">
@@ -240,6 +296,38 @@
     </section>
   </main>
 
+  <div id="stats" class="stack" hidden>
+    <p class="note">Le PSN n'enregistre le temps de jeu qu'à la fermeture du jeu&nbsp;: chaque hausse vue lors d'un relevé correspond à une session terminée depuis le relevé précédent. Les horaires sont donc estimés avec une fourchette, d'autant plus large que les relevés sont espacés (aucun relevé automatique entre 1&nbsp;h et 12&nbsp;h).</p>
+    <p class="card empty-card" id="statsEmpty" hidden></p>
+    <section class="records" id="records" aria-label="Records"></section>
+    <section class="card pad" id="planCard" aria-labelledby="planTitle">
+      <div class="chart-head">
+        <h2 id="planTitle">Planning des sessions</h2>
+        <div class="legend" id="planLegend"></div>
+      </div>
+      <div class="plan" id="plan">
+        <div class="plan-labels" id="planLabels"></div>
+        <div class="plan-scroll" id="planScroll"><svg id="planSvg" role="img" aria-label="Sessions estimées de chaque joueur dans le temps"></svg></div>
+        <div class="tip" id="planTip" hidden></div>
+      </div>
+    </section>
+    <section class="card pad" id="heatCard" aria-labelledby="heatTitle">
+      <div class="chart-head">
+        <h2 id="heatTitle">Qui joue quand</h2>
+        <div class="legend" id="heatLegend"></div>
+      </div>
+      <div class="heat" id="heat"></div>
+      <p class="hint">Temps de jeu cumulé par heure de la journée (estimation).</p>
+      <div class="tip" id="heatTip" hidden></div>
+    </section>
+    <section class="ptiles" id="ptiles" aria-label="Stats par joueur"></section>
+    <section class="card pad" id="journalCard" aria-labelledby="journalTitle">
+      <h2 id="journalTitle">Journal des sessions</h2>
+      <ol class="journal" id="journal"></ol>
+      <button type="button" class="more" id="journalMore" hidden>Afficher plus</button>
+    </section>
+  </div>
+
   <footer id="foot"></footer>
 </div>
 
@@ -256,7 +344,7 @@
   const RANGE_TXT = { total: "au total", week: "sur 7 jours", day: "sur 24 h" };
   const REFRESH_MS = 5 * 60 * 1000;
 
-  const state = { scope: "game", range: "total", data: null, history: { points: [] }, demo: false };
+  const state = { scope: "game", range: "total", view: location.hash === "#stats" ? "stats" : "board", data: null, history: { points: [] }, demo: false };
   const $ = (id) => document.getElementById(id);
   const nf = new Intl.NumberFormat("fr-FR");
   const rtf = new Intl.RelativeTimeFormat("fr", { numeric: "auto" });
@@ -318,12 +406,17 @@
   function seriesHistory(key) {
     const k = scopeKey();
     const out = [];
-    for (const pt of state.history?.points ?? []) {
+    const pts = [...(state.history?.points ?? [])].sort((a, b) => Date.parse(a.t) - Date.parse(b.t));
+    for (const pt of pts) {
       const v = pt?.[k]?.[key];
       const t = Date.parse(pt?.t);
-      if (v != null && !Number.isNaN(t)) out.push({ t, v });
+      if (v == null || Number.isNaN(t)) continue;
+      // Valeur inchangée jusqu'au relevé précédent (p) : la hausse a eu lieu entre p et t.
+      const last = out[out.length - 1], pc = Date.parse(pt.p ?? "");
+      if (last && v !== last.v && pc > last.t && pc < t) out.push({ t: pc, v: last.v });
+      out.push({ t, v });
     }
-    return out.sort((a, b) => a.t - b.t);
+    return out;
   }
   function valueAt(series, time) {
     let v;
@@ -364,6 +457,9 @@
     $("kicker").textContent = data.kicker || "PS5 · entre potes";
     $("subtitle").textContent = data.subtitle || `Qui passe le plus de temps sur ${label} ?`;
     $("demoBanner").hidden = !state.demo;
+    const statsView = state.view === "stats";
+    $("main").hidden = statsView;
+    $("stats").hidden = !statsView;
     $("demoBanner").textContent = "Aperçu avec des données fictives : " +
       (state.setupMessage || "le vrai classement s'affichera dès que la mise à jour automatique aura tourné une première fois.");
     $("main").classList.remove("loading");
@@ -386,6 +482,7 @@
     renderLocked(players.filter((p) => !(p.status === "ok" || p.status === "stale")));
     renderFooter(data);
     renderFresh();
+    if (statsView) renderStats(now);
   }
 
   function renderHero(ranked, preRelease, rel, label) {
@@ -763,6 +860,326 @@
     else if (e.key === "End") { showAt(chartModel.times.length - 1); e.preventDefault(); }
     else if (e.key === "Escape") hideTip();
   });
+
+  // ---------- onglet Stats : sessions estimées ----------
+  // Le PSN n'enregistre le temps de jeu qu'à la fermeture du jeu. Une hausse de d minutes
+  // vue au relevé t, alors que le relevé précédent était à p, veut dire : session(s) terminée(s)
+  // entre p et t, commencée(s) d minutes plus tôt. D'où une fourchette pour le début et la fin.
+  const MIN = 60e3;
+  const SEQ = ["#0d366b", "#104281", "#184f95", "#1c5cab", "#256abf", "#2a78d6", "#3987e5", "#5598e7", "#6da7ec", "#86b6ef", "#9ec5f4", "#b7d3f6", "#cde2fb"];
+  const LONG_GAP = 3 * H;
+  const statsUi = { journalShown: 20 };
+
+  const two = (n) => String(n).padStart(2, "0");
+  const fmtClock = (ms) => { const d = new Date(ms); return `${d.getHours()} h ${two(d.getMinutes())}`; };
+  const fmtDay = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  const dayKey = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`; };
+  const fmtWhen = (ms, ref) => (ref != null && dayKey(ms) === dayKey(ref) ? fmtClock(ms) : `${fmtDay(ms)}, ${fmtClock(ms)}`);
+  const midnight = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+
+  function rawValue(p, v, t) {
+    const bonus = p.game?.bonus, since = Date.parse(p.game?.bonusSince ?? "");
+    return bonus && !Number.isNaN(since) && t >= since ? v - bonus : v;
+  }
+
+  function computeSessions(players) {
+    const k = scopeKey();
+    const pts = (state.history?.points ?? [])
+      .map((pt) => ({ t: Date.parse(pt.t), p: pt.p ? Date.parse(pt.p) : null, vals: pt[k] || {} }))
+      .filter((x) => !Number.isNaN(x.t))
+      .sort((a, b) => a.t - b.t);
+    const gaps = [];
+    pts.forEach((x, i) => {
+      const prev = x.p ?? (i ? pts[i - 1].t : null);
+      if (prev != null && x.t - prev > 90 * MIN) gaps.push([prev, x.t]);
+    });
+    const sessions = [];
+    for (const p of players) {
+      let prev = null;
+      for (const x of pts) {
+        const v0 = x.vals[p.key];
+        if (v0 == null) continue;
+        const v = rawValue(p, v0, x.t);
+        if (prev && v > prev.v) {
+          const d = v - prev.v;
+          const endMin = Math.max(x.p ?? prev.t, prev.t), endMax = x.t;
+          sessions.push({ p, minutes: d, endMin, endMax, startMin: endMin - d * MIN, startMax: endMax - d * MIN, merged: endMax - endMin > LONG_GAP });
+        }
+        prev = { t: x.t, v };
+      }
+    }
+    sessions.sort((a, b) => b.endMax - a.endMax);
+    return { sessions, gaps };
+  }
+
+  // Répartit les minutes d'une session sur les heures d'horloge, en moyennant sur toutes les fins possibles.
+  function spread(s, onSeg) {
+    const span = s.endMax - s.endMin;
+    const n = Math.max(1, Math.min(24, Math.ceil(span / (15 * MIN))));
+    for (let i = 0; i < n; i++) {
+      const e = s.endMin + (span * (i + 0.5)) / n;
+      let a = e - s.minutes * MIN;
+      while (a < e) {
+        const b = Math.min(e, (Math.floor(a / H) + 1) * H);
+        onSeg(a, ((b - a) / MIN) / n);
+        a = b;
+      }
+    }
+  }
+
+  function aggregate(sessions, players, start) {
+    const by = new Map(players.map((p) => [p.key, { p, sessions: [], total: 0, hours: new Array(24).fill(0), days: new Map() }]));
+    for (const s of sessions) {
+      if (start != null && s.endMax < start) continue;
+      const a = by.get(s.p.key);
+      if (!a) continue;
+      a.sessions.push(s);
+      a.total += s.minutes;
+      spread(s, (ms, m) => {
+        a.hours[new Date(ms).getHours()] += m;
+        const k = dayKey(ms);
+        const cur = a.days.get(k) || { ms: midnight(ms), m: 0 };
+        cur.m += m;
+        a.days.set(k, cur);
+      });
+    }
+    return by;
+  }
+
+  function favoriteSlot(hours) {
+    let best = -1, at = 0;
+    for (let h = 0; h < 24; h++) {
+      const v = hours[h] + hours[(h + 1) % 24] + hours[(h + 2) % 24];
+      if (v > best) { best = v; at = h; }
+    }
+    return best > 0 ? `${at} h – ${(at + 3) % 24} h` : null;
+  }
+
+  function renderStats(now) {
+    const players = (state.data?.players ?? [])
+      .filter((p) => p.status === "ok" || p.status === "stale")
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    const start = windowStart(now);
+    const { sessions, gaps } = computeSessions(players);
+    const inWin = sessions.filter((s) => start == null || s.endMax >= start);
+    const agg = aggregate(sessions, players, start);
+    const label = state.scope === "game" ? (state.data?.game?.label || "le jeu") : "tous les jeux";
+    $("statsEmpty").hidden = inWin.length > 0;
+    $("statsEmpty").textContent = `Aucune session enregistrée ${RANGE_TXT[state.range] === "au total" ? "pour l'instant" : RANGE_TXT[state.range]} sur ${label}.`;
+    for (const id of ["records", "planCard", "heatCard", "ptiles", "journalCard"]) $(id).hidden = inWin.length === 0;
+    if (!inWin.length) return;
+    renderRecords(inWin, agg);
+    renderPlan(inWin, gaps, players, now, start);
+    renderHeat(agg, players);
+    renderTiles(agg, players);
+    renderJournal(inWin);
+  }
+
+  function recordCard(k, v, s) {
+    const c = el("div", "card record");
+    c.append(el("div", "k", k), el("div", "v", v), el("div", "s", s));
+    return c;
+  }
+  function renderRecords(sessions, agg) {
+    const box = $("records");
+    box.replaceChildren();
+    const longest = sessions.reduce((a, b) => (b.minutes > a.minutes ? b : a));
+    box.appendChild(recordCard("Plus longue session", fmtDur(longest.minutes),
+      `${longest.p.name} · fin ${fmtDay(longest.endMax)}${longest.merged ? " · peut regrouper plusieurs sessions" : ""}`));
+    let bestDay = null;
+    for (const a of agg.values()) for (const d of a.days.values()) if (!bestDay || d.m > bestDay.m) bestDay = { ...d, p: a.p };
+    if (bestDay) box.appendChild(recordCard("Plus grosse journée", fmtDur(bestDay.m), `${bestDay.p.name} · ${fmtDay(bestDay.ms)} (estimation)`));
+    const most = [...agg.values()].reduce((a, b) => (b.sessions.length > a.sessions.length ? b : a));
+    box.appendChild(recordCard("Plus de sessions", String(most.sessions.length), `${most.p.name} · ${fmtDur(most.total)} au total`));
+  }
+
+  function renderPlan(sessions, gaps, players, now, start) {
+    const scroll = $("planScroll"), root = $("planSvg"), labels = $("planLabels"), legend = $("planLegend");
+    root.replaceChildren(); labels.replaceChildren(); legend.replaceChildren();
+    $("planTip").hidden = true;
+    const t0 = start ?? midnight(Math.min(...sessions.map((s) => s.startMin)));
+    const span = Math.max(H, now - t0);
+    const rowH = 30, top = 26;
+    const width = Math.max(scroll.clientWidth || 300, Math.round((span / D) * 90));
+    const height = top + players.length * rowH + 4;
+    root.setAttribute("width", width); root.setAttribute("height", height);
+    root.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    const x = (t) => 2 + ((Math.min(now, Math.max(t0, t)) - t0) / span) * (width - 4);
+
+    for (const [a, b] of gaps) if (b > t0) {
+      svg("rect", { x: x(a), y: top - 4, width: Math.max(0, x(b) - x(a)), height: height - top + 4, fill: "rgba(255,255,255,0.045)" }, root);
+    }
+    for (let d = midnight(t0) + (midnight(t0) < t0 ? D : 0); d <= now; d = midnight(d + 26 * H)) {
+      svg("line", { x1: x(d), x2: x(d), y1: 4, y2: height, stroke: "var(--grid)", "stroke-width": 1 }, root);
+      const tx = svg("text", { x: x(d) + 5, y: 15, fill: "var(--muted)", "font-size": 11 }, root);
+      tx.textContent = new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+      const noon = d + 12 * H;
+      if (noon < now && width / (span / D) >= 170) {
+        const tn = svg("text", { x: x(noon), y: 15, fill: "var(--muted)", "font-size": 10, "text-anchor": "middle", opacity: 0.7 }, root);
+        tn.textContent = "12 h";
+      }
+    }
+    players.forEach((p, i) => {
+      const yy = top + i * rowH + rowH / 2;
+      svg("line", { x1: 0, x2: width, y1: yy, y2: yy, stroke: "var(--grid)", "stroke-width": 1, opacity: 0.5 }, root);
+      const lab = el("div");
+      const key = el("i"); key.style.setProperty("--c", colorOf(p));
+      lab.append(key, document.createTextNode(p.name));
+      labels.appendChild(lab);
+    });
+    const rowOf = new Map(players.map((p, i) => [p.key, i]));
+    sessions.forEach((s, idx) => {
+      const i = rowOf.get(s.p.key);
+      if (i == null) return;
+      const yy = top + i * rowH + rowH / 2, c = colorOf(s.p);
+      const x1 = x(s.startMin), x2 = x(s.endMax);
+      svg("rect", { x: x1, y: yy - 6, width: Math.max(3, x2 - x1), height: 12, rx: 3, fill: c, "fill-opacity": 0.3 }, root);
+      if (s.startMax < s.endMin) {
+        const c1 = x(s.startMax), c2 = x(s.endMin);
+        svg("rect", { x: c1, y: yy - 6, width: Math.max(3, c2 - c1), height: 12, rx: 3, fill: c }, root);
+      }
+      svg("rect", { x: x1 - 3, y: yy - rowH / 2 + 2, width: Math.max(9, x2 - x1 + 6), height: rowH - 4, fill: "transparent", "data-idx": idx, style: "cursor:pointer" }, root);
+    });
+    planSessions = sessions;
+    const items = [["Joué à coup sûr", 1], ["Plage possible", 0.3]];
+    for (const [txt, op] of items) {
+      const it = el("span"), k = el("i");
+      k.style.cssText = `width:14px;height:8px;border-radius:2px;background:var(--text-2);opacity:${op}`;
+      it.append(k, document.createTextNode(txt));
+      legend.appendChild(it);
+    }
+    const g = el("span"), gk = el("i");
+    gk.style.cssText = "width:14px;height:8px;border-radius:2px;background:rgba(255,255,255,0.18)";
+    g.append(gk, document.createTextNode("Pas de relevé"));
+    legend.appendChild(g);
+    requestAnimationFrame(() => { scroll.scrollLeft = scroll.scrollWidth; });
+  }
+  let planSessions = [];
+
+  function sessionTip(tip, s) {
+    tip.replaceChildren();
+    const head = el("div", "r");
+    const key = el("i"); key.style.setProperty("--c", colorOf(s.p));
+    head.append(key, el("b", null, fmtDur(s.minutes)), el("span", null, s.p.name));
+    tip.append(head,
+      el("div", "t", `Début entre ${fmtWhen(s.startMin)} et ${fmtWhen(s.startMax, s.startMin)}`),
+      el("div", "t", `Fin entre ${fmtWhen(s.endMin)} et ${fmtWhen(s.endMax, s.endMin)}`));
+    if (s.merged) tip.appendChild(el("div", "t", "Relevés espacés : peut regrouper plusieurs sessions"));
+  }
+  function placeTip(tip, container, clientX, clientY) {
+    tip.hidden = false;
+    const r = container.getBoundingClientRect();
+    let left = clientX - r.left + 12, topPx = clientY - r.top + 12;
+    if (left + tip.offsetWidth > r.width) left = Math.max(0, clientX - r.left - tip.offsetWidth - 12);
+    tip.style.left = `${left}px`; tip.style.top = `${topPx}px`;
+  }
+  $("planSvg").addEventListener("pointermove", (e) => {
+    const idx = e.target?.dataset?.idx;
+    const tip = $("planTip");
+    if (idx == null) { tip.hidden = true; return; }
+    sessionTip(tip, planSessions[Number(idx)]);
+    placeTip(tip, $("plan"), e.clientX, e.clientY);
+  });
+  $("planSvg").addEventListener("pointerleave", () => { $("planTip").hidden = true; });
+
+  function heatColor(v, max) {
+    if (v < 1 || max <= 0) return "var(--surface-2)";
+    return SEQ[Math.min(SEQ.length - 1, Math.floor((v / max) * SEQ.length))];
+  }
+  function renderHeat(agg, players) {
+    const box = $("heat"), legend = $("heatLegend");
+    box.replaceChildren(); legend.replaceChildren();
+    const max = Math.max(0, ...[...agg.values()].flatMap((a) => a.hours));
+    box.appendChild(el("div", "h"));
+    for (let h = 0; h < 24; h++) box.appendChild(el("div", "h", h % 3 === 0 ? `${h} h` : ""));
+    for (const p of players) {
+      const a = agg.get(p.key);
+      const n = el("div", "n");
+      const key = el("i"); key.style.setProperty("--c", colorOf(p));
+      n.append(key, document.createTextNode(p.name));
+      box.appendChild(n);
+      for (let h = 0; h < 24; h++) {
+        const v = a ? a.hours[h] : 0;
+        const c = el("div", "c");
+        c.style.background = heatColor(v, max);
+        c.dataset.tip = `${p.name} · ${h} h – ${(h + 1) % 24} h · ${v >= 1 ? fmtDur(v) : "rien"}`;
+        c.setAttribute("aria-label", c.dataset.tip);
+        box.appendChild(c);
+      }
+    }
+    legend.appendChild(el("em", null, "Moins"));
+    const ramp = el("span", "ramp");
+    for (const i of [0, 3, 6, 9, 12]) { const sw = el("i"); sw.style.background = SEQ[i]; ramp.appendChild(sw); }
+    legend.appendChild(ramp);
+    legend.appendChild(el("em", null, "Plus"));
+  }
+  $("heat").addEventListener("pointermove", (e) => {
+    const t = e.target?.dataset?.tip, tip = $("heatTip");
+    if (!t) { tip.hidden = true; return; }
+    tip.replaceChildren(el("div", null, t));
+    placeTip(tip, $("heatCard"), e.clientX, e.clientY);
+  });
+  $("heat").addEventListener("pointerleave", () => { $("heatTip").hidden = true; });
+
+  function renderTiles(agg, players) {
+    const box = $("ptiles");
+    box.replaceChildren();
+    for (const p of players) {
+      const a = agg.get(p.key);
+      const card = el("div", "card ptile");
+      card.style.setProperty("--c", colorOf(p));
+      const hd = el("div", "hd");
+      hd.append(el("i"), document.createTextNode(p.name));
+      card.appendChild(hd);
+      if (!a || !a.sessions.length) {
+        card.appendChild(el("div", "none", "Aucune session sur cette période"));
+        box.appendChild(card);
+        continue;
+      }
+      card.appendChild(el("div", "big", fmtDur(a.total)));
+      const ul = el("ul");
+      const line = (label, value) => { const li = el("li"); li.append(document.createTextNode(`${label} `), el("b", null, value)); ul.appendChild(li); };
+      const n = a.sessions.length;
+      line(`${n} session${n > 1 ? "s" : ""} · moyenne`, fmtDur(a.total / n));
+      const rec = a.sessions.reduce((x, y) => (y.minutes > x.minutes ? y : x));
+      line("Record :", `${fmtDur(rec.minutes)} (${fmtDay(rec.endMax)})`);
+      const slot = favoriteSlot(a.hours);
+      if (slot) line("Créneau favori :", slot);
+      const bd = [...a.days.values()].reduce((x, y) => (y.m > x.m ? y : x), { m: 0 });
+      if (bd.m >= 1) line("Jour le plus actif :", `${fmtDay(bd.ms)} (${fmtDur(bd.m)})`);
+      card.appendChild(ul);
+      if (p.game?.bonus) card.appendChild(el("div", "none", `Hors ${fmtDur(Math.abs(p.game.bonus))} ${p.game.bonus > 0 ? "ajoutées" : "retirées"} à la main`));
+      box.appendChild(card);
+    }
+  }
+
+  function renderJournal(sessions) {
+    const ol = $("journal");
+    ol.replaceChildren();
+    for (const s of sessions.slice(0, statsUi.journalShown)) {
+      const li = el("li");
+      li.style.setProperty("--c", colorOf(s.p));
+      const who = el("div");
+      who.append(el("span", "w", s.p.name), document.createTextNode(` · ${fmtDay(s.endMax)}`));
+      li.append(el("i"), who, el("div", "d", fmtDur(s.minutes)),
+        el("div", "r", `Début entre ${fmtWhen(s.startMin)} et ${fmtWhen(s.startMax, s.startMin)} · fin entre ${fmtWhen(s.endMin)} et ${fmtWhen(s.endMax, s.endMin)}`));
+      if (s.merged) li.appendChild(el("div", "x", `Relevés espacés de ${fmtDur((s.endMax - s.endMin) / MIN)} : peut regrouper plusieurs sessions`));
+      ol.appendChild(li);
+    }
+    $("journalMore").hidden = sessions.length <= statsUi.journalShown;
+  }
+  $("journalMore").addEventListener("click", () => { statsUi.journalShown += 20; render(); });
+
+  // ---------- onglets ----------
+  function setView(view, push) {
+    state.view = view;
+    $("tabBoard").setAttribute("aria-selected", String(view === "board"));
+    $("tabStats").setAttribute("aria-selected", String(view === "stats"));
+    if (push) history.replaceState(null, "", view === "stats" ? "#stats" : location.pathname + location.search);
+    render();
+  }
+  $("tabBoard").addEventListener("click", () => setView("board", true));
+  $("tabStats").addEventListener("click", () => setView("stats", true));
 
   // ---------- filtres ----------
   function wireSeg(id, prop) {

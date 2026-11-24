@@ -23,9 +23,6 @@ const PAGE_SIZE = 200;
 const MAX_PAGES = 15;
 const DELAY_BETWEEN_CALLS_MS = 400;
 const MAX_HISTORY_POINTS = 4000;
-// Si le dernier point date de plus longtemps que ça, on ajoute un point "juste avant"
-// pour que la courbe ne monte pas en pente douce sur des heures où personne n'a joué.
-const ANCHOR_GAP_MS = 90 * 60 * 1000;
 const RUN_INTERVAL_MS = 60 * 60 * 1000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -196,11 +193,20 @@ function classifyError(err) {
   return { status: "error", message: msg };
 }
 
+/**
+ * Ajoute un point d'historique si un compteur a bougé. Chaque point garde `p`, l'heure du
+ * relevé précédent : le PSN n'enregistre le temps qu'à la fermeture du jeu, donc une hausse
+ * vue à `t` correspond à une session terminée entre `p` et `t`.
+ * `history.lastCheck` est mis à jour à chaque relevé, même sans changement.
+ */
 export function appendHistory(history, values, nowIso) {
   const points = history.points;
   const last = points[points.length - 1];
+  const previousCheck = history.lastCheck ?? last?.t ?? null;
+  history.lastCheck = nowIso;
   const next = {
     t: nowIso,
+    ...(previousCheck ? { p: previousCheck } : {}),
     g: { ...(last?.g ?? {}), ...values.g },
     a: { ...(last?.a ?? {}), ...values.a },
   };
@@ -209,20 +215,18 @@ export function appendHistory(history, values, nowIso) {
     return kx.length === Object.keys(y).length && kx.every((k) => x[k] === y[k]);
   };
   if (last && same(last.g, next.g) && same(last.a, next.a)) return false;
-
-  if (last) {
-    const anchorTime = Date.parse(nowIso) - RUN_INTERVAL_MS;
-    if (anchorTime - Date.parse(last.t) > ANCHOR_GAP_MS) {
-      points.push({ t: new Date(anchorTime).toISOString(), g: { ...last.g }, a: { ...last.a } });
-    }
-  }
   points.push(next);
 
   // Garde l'historique léger : on éclaircit la moitié la plus ancienne si besoin.
+  // Un point retiré transmet son `p` au suivant (les deux hausses fusionnent).
   while (points.length > MAX_HISTORY_POINTS) {
     const half = Math.floor(points.length / 2);
-    const thinned = points.slice(0, half).filter((_, i) => i % 2 === 0);
-    points.splice(0, half, ...thinned);
+    const kept = [];
+    for (let i = 0; i < half; i++) {
+      if (i % 2 === 0) kept.push(points[i]);
+      else if (points[i + 1] && points[i].p) points[i + 1].p = points[i].p;
+    }
+    points.splice(0, half, ...kept);
   }
   return true;
 }
@@ -304,6 +308,7 @@ async function main() {
         summary.game.minutes = Math.max(0, summary.game.minutes + bonus);
         summary.all.minutes = Math.max(0, summary.all.minutes + bonus);
         summary.game.bonus = bonus;
+        if (player.bonusSince) summary.game.bonusSince = player.bonusSince;
       }
 
       // Journal : derniers jeux lancés, pour vérifier le nom et la catégorie renvoyés par le PSN.
