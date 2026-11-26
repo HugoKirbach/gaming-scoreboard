@@ -23,7 +23,8 @@ const PAGE_SIZE = 200;
 const MAX_PAGES = 15;
 const DELAY_BETWEEN_CALLS_MS = 400;
 const MAX_HISTORY_POINTS = 4000;
-const RUN_INTERVAL_MS = 60 * 60 * 1000;
+const RUN_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const REFRESH_LABEL = "chaque jour à 3 h";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const keyOf = (onlineId) => String(onlineId).trim().toLowerCase();
@@ -242,6 +243,7 @@ function siteMeta(config) {
     subtitle: config.subtitle ?? `Qui passe le plus de temps sur ${label} ?`,
     game: { label, releaseDate: config.game?.releaseDate ?? null },
     refreshMinutes: RUN_INTERVAL_MS / 60000,
+    refreshLabel: REFRESH_LABEL,
     refreshUrl: /^https:\/\//.test(config.refreshUrl ?? "") ? config.refreshUrl : null,
   };
 }

@@ -297,7 +297,7 @@
   </main>
 
   <div id="stats" class="stack" hidden>
-    <p class="note">Le PSN n'enregistre le temps de jeu qu'à la fermeture du jeu&nbsp;: chaque hausse vue lors d'un relevé correspond à une session terminée depuis le relevé précédent. Les horaires sont donc estimés avec une fourchette, d'autant plus large que les relevés sont espacés (aucun relevé automatique entre 1&nbsp;h et 12&nbsp;h).</p>
+    <p class="note">Le PSN n'enregistre le temps de jeu qu'à la fermeture du jeu&nbsp;: chaque hausse vue lors d'un relevé correspond à une session terminée depuis le relevé précédent. Les horaires sont donc estimés avec une fourchette, d'autant plus large que les relevés sont espacés (un relevé automatique par jour, à 3&nbsp;h, plus ceux lancés à la main).</p>
     <p class="card empty-card" id="statsEmpty" hidden></p>
     <section class="records" id="records" aria-label="Records"></section>
     <section class="card pad" id="planCard" aria-labelledby="planTitle">
@@ -624,7 +624,7 @@
   function renderFooter(data) {
     const foot = $("foot");
     foot.replaceChildren();
-    const every = (data.refreshMinutes ?? 60) === 60 ? "toutes les heures" : `toutes les ${data.refreshMinutes} min`;
+    const every = data.refreshLabel || ((data.refreshMinutes ?? 60) === 60 ? "toutes les heures" : `toutes les ${data.refreshMinutes} min`);
     foot.append(
       el("p", null, state.demo ? "Données de démonstration" : `Actualisation automatique ${every}`),
       el("p", null, "Temps de jeu lu sur le PSN (API non officielle), parfois avec un peu de retard. Site entre amis, sans lien avec Rockstar Games ni Sony.")
@@ -1258,7 +1258,7 @@
         kicker: meta.kicker,
         subtitle: meta.subtitle,
         game: { label, releaseDate: `${ld.getFullYear()}-${pad(ld.getMonth() + 1)}-${pad(ld.getDate())}` },
-        updatedAt: new Date(now).toISOString(), refreshMinutes: meta.refreshMinutes || 60, players,
+        updatedAt: new Date(now).toISOString(), refreshMinutes: meta.refreshMinutes || 1440, refreshLabel: meta.refreshLabel || "chaque jour à 3 h", players,
       },
       history: { points },
     };

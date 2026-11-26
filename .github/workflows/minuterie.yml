@@ -1,9 +1,10 @@
 name: Minuterie
 
-# Lancée à la fin de chaque mise à jour du classement : attend ~1 h puis relance la mise à jour.
-# Plus fiable que la programmation « schedule » de GitHub, qui saute souvent des heures.
-# Heures creuses (heure de Paris) : pas de mise à jour automatique entre QUIET_START et QUIET_END,
-# la suivante a lieu à QUIET_END pile.
+# Lancée à la fin de chaque mise à jour du classement : attend la prochaine heure de mise à jour
+# (UPDATE_TIME, heure de Paris) puis relance la mise à jour. Une seule par jour.
+# Une tâche GitHub ne peut pas dépasser 6 h : au-delà de MAX_WAIT, la minuterie se relaie
+# en lançant une nouvelle minuterie.
+# Plus fiable que la programmation « schedule » de GitHub, qui saute ou retarde souvent les créneaux.
 # Une seule minuterie à la fois : une nouvelle annule l'ancienne.
 
 on:
@@ -24,29 +25,22 @@ jobs:
       - name: Attendre la prochaine mise à jour
         id: wait
         env:
-          QUIET_START: 1    # 1 h du matin
-          QUIET_END: 12     # midi
-          INTERVAL: 3420    # 57 min (+ ~1-3 min de mise à jour = environ une fois par heure)
-          MAX_WAIT: 19800   # 5 h 30 : au-delà, on enchaîne une nouvelle minuterie (limite GitHub : 6 h)
+          UPDATE_TIME: "03:00"   # heure de Paris
+          MARGIN: 600            # une mise à jour faite moins de 10 min avant compte pour celle du jour
+          MAX_WAIT: 19800        # 5 h 30
         run: |
           now=${NOW_OVERRIDE:-$(date +%s)}
-          target=$((now + INTERVAL))
-          hour() { TZ=Europe/Paris date -d "@$1" +%-H; }
-          quiet() { [ "$1" -ge "$QUIET_START" ] && [ "$1" -lt "$QUIET_END" ]; }
-
-          if quiet "$(hour "$now")" || quiet "$(hour "$target")"; then
-            day=$(TZ=Europe/Paris date -d "@$now" +%F)
-            target=$(TZ=Europe/Paris date -d "$day $QUIET_END:00" +%s)
-            if [ "$target" -le "$now" ]; then
-              day=$(TZ=Europe/Paris date -d "$day + 1 day" +%F)
-              target=$(TZ=Europe/Paris date -d "$day $QUIET_END:00" +%s)
-            fi
-            echo "Heures creuses : prochaine mise à jour le $(TZ=Europe/Paris date -d "@$target" '+%d/%m à %H:%M') (heure de Paris)."
+          day=$(TZ=Europe/Paris date -d "@$now" +%F)
+          target=$(TZ=Europe/Paris date -d "$day $UPDATE_TIME" +%s)
+          if [ "$target" -le $((now + MARGIN)) ]; then
+            day=$(TZ=Europe/Paris date -d "$day + 1 day" +%F)
+            target=$(TZ=Europe/Paris date -d "$day $UPDATE_TIME" +%s)
           fi
+          echo "Prochaine mise à jour le $(TZ=Europe/Paris date -d "@$target" '+%d/%m à %H:%M') (heure de Paris)."
 
           wait=$((target - now))
           if [ "$wait" -gt "$MAX_WAIT" ]; then
-            echo "Attente de $((MAX_WAIT / 60)) min, puis nouvelle minuterie."
+            echo "Attente de $((MAX_WAIT / 60)) min, puis relais par une nouvelle minuterie."
             echo "next=minuterie" >> "$GITHUB_OUTPUT"
             ${DRY_RUN:+echo} sleep "$MAX_WAIT"
           else

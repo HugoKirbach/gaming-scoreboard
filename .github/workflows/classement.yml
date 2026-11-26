@@ -2,7 +2,7 @@ name: Mise à jour du classement
 
 on:
   schedule:
-    - cron: "17 11-22 * * *" # filet de sécurité (UTC, hors heures creuses de Paris) : GitHub saute souvent ces créneaux, la minuterie fait le vrai travail
+    - cron: "30 2 * * *"      # secours (3 h 30 à Paris l'hiver) : ne fait rien si la minuterie tourne
   workflow_dispatch:          # bouton « Run workflow » dans l'onglet Actions
   push:
     branches: [main]          # relance quand tu modifies config.json ou la page
@@ -18,24 +18,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # GitHub lance parfois les créneaux programmés avec des heures de retard :
-  # on ignore ceux qui tombent dans les heures creuses de Paris (1 h - 12 h).
-  heures-creuses:
+  # Créneau de secours : la minuterie (minuterie.yml) programme normalement la mise à jour
+  # quotidienne de 3 h. Si elle tourne, on ne fait rien ; si elle s'est arrêtée, on la relance.
+  garde:
     runs-on: ubuntu-latest
     outputs:
       skip: ${{ steps.check.outputs.skip }}
     steps:
       - id: check
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
-          h=$(TZ=Europe/Paris date +%-H)
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$h" -ge 1 ] && [ "$h" -lt 12 ]; then
-            echo "Heures creuses à Paris (${h} h) : créneau programmé ignoré."
+          alive=$(gh run list -R "$REPO" -w minuterie.yml -L 10 --json status -q '[.[] | select(.status != "completed")] | length')
+          if [ "$alive" -gt 0 ]; then
+            echo "La minuterie tourne : rien à faire."
             echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last=$(gh run list -R "$REPO" -w classement.yml -L 30 --json conclusion,createdAt,event \
+            -q '[.[] | select(.conclusion == "success" and .event != "schedule")][0].createdAt // ""')
+          if [ -n "$last" ] && [ $(( $(date +%s) - $(date -d "$last" +%s) )) -lt 72000 ]; then
+            echo "Minuterie arrêtée mais mise à jour récente ($last) : on relance seulement la minuterie."
+            gh workflow run minuterie.yml -R "$REPO" --ref "${{ github.ref_name }}"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Minuterie arrêtée : mise à jour de secours."
           fi
 
   update:
-    needs: heures-creuses
-    if: needs.heures-creuses.outputs.skip != 'true'
+    needs: garde
+    if: needs.garde.outputs.skip != 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

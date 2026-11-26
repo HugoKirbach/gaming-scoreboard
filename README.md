@@ -2,7 +2,7 @@
 
 Un petit site qui classe la bande selon le temps passé sur un jeu PS5 (actuellement **GTA VI**) et sur tous les jeux PS4/PS5 : cumul, 7 derniers jours, dernières 24 h, une courbe « La course » et les trophées de chacun.
 
-- Les temps de jeu viennent du **PSN**, lus toutes les heures par GitHub Actions, ou à la demande avec le bouton **Actualiser**.
+- Les temps de jeu viennent du **PSN**, lus chaque jour à 3 h par GitHub Actions, ou à la demande.
 - Le site est hébergé gratuitement sur **GitHub Pages** : <https://hugokirbach.github.io/gaming-scoreboard/>
 - Rockstar ne fournit plus de stats publiques depuis la fermeture du Social Club, d'où le passage par le PSN.
 
@@ -73,9 +73,9 @@ Le PSN n'enregistre le temps de jeu qu'à la fermeture du jeu. Chaque hausse vue
 - « Qui joue quand » : temps cumulé par heure de la journée ;
 - les stats de chacun et le journal des sessions.
 
-Chaque point de `docs/history.json` garde pour cela l'heure du relevé précédent (`p`), et `lastCheck` celle du dernier relevé. Quand les relevés sont espacés de plus de 3 h (la nuit), une hausse peut regrouper plusieurs sessions : c'est signalé. Les minutes ajoutées à la main (`gameBonusMinutes`, à partir de `bonusSince`) ne comptent pas comme une session.
+Chaque point de `docs/history.json` garde pour cela l'heure du relevé précédent (`p`), et `lastCheck` celle du dernier relevé. Avec un seul relevé par jour, la fourchette fait jusqu'à 24 h et une hausse regroupe souvent plusieurs sessions : c'est signalé. Les minutes ajoutées à la main (`gameBonusMinutes`, à partir de `bonusSince`) ne comptent pas comme une session.
 
-## Bouton « Actualiser » et mise à jour horaire fiable
+## Bouton « Actualiser »
 
 Un petit relais gratuit chez Cloudflare (`cloudflare/worker.js`) lance la mise à jour quand quelqu'un clique sur **Actualiser** (au plus une fois toutes les 5 minutes). Ton jeton GitHub reste secret chez Cloudflare, jamais dans la page.
 
@@ -87,14 +87,13 @@ Un petit relais gratuit chez Cloudflare (`cloudflare/worker.js`) lance la mise �
    - *Workers & Pages* › *Create* › *Hello World*, nomme-le par exemple `classement-relais`, puis *Deploy*.
    - *Edit code* : remplace tout par le contenu de `cloudflare/worker.js`, puis *Deploy*.
    - *Settings* › *Variables and Secrets* › *Add* : type **Secret**, nom `GITHUB_TOKEN`, valeur : le jeton de l'étape 1.
-   - Facultatif : *Settings* › *Triggers* › *Cron Triggers* › *Add* `17 * * * *` pour un second déclencheur horaire, en plus de la minuterie GitHub.
 3. **Brancher le bouton** : copie l'adresse du relais (`https://classement-relais.<ton-compte>.workers.dev`) dans `config.json`, champ `refreshUrl`. Le bouton apparaît sur le site à la mise à jour suivante.
 
 Le bouton ne fait pas aller Sony plus vite : si le PSN n'a pas encore enregistré une session, elle n'apparaîtra qu'au moment où Sony la publie.
 
-## Mise à jour horaire
+## Mise à jour quotidienne (3 h)
 
-La programmation « schedule » de GitHub saute souvent des créneaux. Chaque mise à jour lance donc à la fin une **minuterie** (`.github/workflows/minuterie.yml`) qui attend environ une heure puis relance la mise à jour suivante. Une seule minuterie tourne à la fois. **Heures creuses** : pas de mise à jour automatique entre 1 h et 12 h (heure de Paris) ; la première de la journée a lieu à midi pile. Les horaires se règlent dans `minuterie.yml` (`QUIET_START`, `QUIET_END`). Une mise à jour lancée à la main, ou par le bouton, fonctionne à toute heure. Si la chaîne s'arrête (panne GitHub, exécution annulée à la main), elle repart à la prochaine modification du dépôt, au prochain créneau programmé que GitHub n'aura pas sauté, ou avec *Actions › Mise à jour du classement › Run workflow*.
+Une seule mise à jour automatique par jour, à **3 h du matin** (heure de Paris). La programmation « schedule » de GitHub étant peu fiable, c'est une **minuterie** (`.github/workflows/minuterie.yml`) qui s'en charge : lancée à la fin de chaque mise à jour, elle attend 3 h (en se relayant toutes les 5 h 30, limite GitHub de 6 h par tâche) puis relance la mise à jour. L'heure se règle avec `UPDATE_TIME`. Un créneau de secours à 3 h 30 relance la minuterie si elle s'est arrêtée. Une mise à jour lancée à la main fonctionne à toute heure ; si elle tombe moins de 10 min avant 3 h, elle compte pour celle du jour.
 
 ## Entretien
 
@@ -105,7 +104,7 @@ La programmation « schedule » de GitHub saute souvent des créneaux. Chaque mi
 ## Bon à savoir
 
 - Le temps de jeu est celui que Sony enregistre (celui de la fiche du jeu sur PS5). Il arrive qu'il se mette à jour avec un peu de retard, souvent à la fin d'une session.
-- L'accès passe par [psn-api](https://psn-api.achievements.app), une librairie **non officielle**. Sony peut la casser du jour au lendemain. Le script reste volontairement léger (une lecture par joueur toutes les heures) pour ne pas solliciter le PSN.
+- L'accès passe par [psn-api](https://psn-api.achievements.app), une librairie **non officielle**. Sony peut la casser du jour au lendemain. Le script reste volontairement léger (une lecture par joueur et par jour) pour ne pas solliciter le PSN.
 - Le jeu est reconnu par son nom (`game.match` dans `config.json`, une expression régulière insensible à la casse).
 - Le site est public : tout le monde avec le lien voit les pseudos et les heures. Préviens la bande.
 

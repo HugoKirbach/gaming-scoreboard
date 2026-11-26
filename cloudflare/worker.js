@@ -2,7 +2,8 @@
 //
 // - POST /        : lance la mise à jour GitHub Actions (bouton « Actualiser » du site),
 //                   au plus une fois toutes les COOLDOWN_SECONDS.
-// - Cron Trigger  : lance la même mise à jour toutes les heures, de façon fiable.
+// - Cron Trigger  : facultatif, inutile avec la minuterie GitHub (n'en ajoute pas si tu veux
+//                   garder une seule mise à jour par jour).
 //
 // Secret à définir dans Cloudflare : GITHUB_TOKEN (jeton GitHub « fine-grained »,
 // limité au dépôt, permission Actions : Read and write).
